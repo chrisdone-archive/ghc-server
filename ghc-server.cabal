@@ -1,0 +1,24 @@
+name:                ghc-server
+version:             0.1.0.0
+synopsis:            A server interface to GHC's interactive facilities.
+description:         A server interface to GHC's interactive facilities.
+license:             BSD3
+license-file:        LICENSE
+author:              Chris Done
+maintainer:          chrisdone@gmail.com
+category:            Development
+build-type:          Simple
+cabal-version:       >=1.8
+
+executable ghc-server
+  main-is:           Main.hs
+  hs-source-dirs:    src/
+  build-depends:     base >= 4 && < 5,
+                     ghc,
+                     ghc-paths,
+                     mtl,
+                     network,
+                     text,
+                     atto-lisp,
+                     bytestring,
+                     attoparsec
