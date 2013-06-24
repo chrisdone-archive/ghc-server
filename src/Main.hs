@@ -66,7 +66,8 @@ newSlave =
 -- | Initialize the GHC service.
 initializeSlave :: Ghc ()
 initializeSlave =
-  do initialDynFlags <- getProgramDynFlags
+  do initialDynFlags <- getSessionDynFlags
+     setSessionDynFlags initialDynFlags
      (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags)
      _pkgs           <- setSessionDynFlags dflags'
      dflags          <- getSessionDynFlags
