@@ -3,18 +3,23 @@
 module Server.Client where
 
 import Server.Types
+import Server.Import
 
 import GHC
-import Data.Dynamic
 
 -- | Call a command, return a result.
-clientCall :: Cmd -> Ghc Result
-clientCall cmd =
+clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
+clientCall withGhc cmd results =
   case cmd of
-    Ping -> return Pong
+    Ping -> do endResult results Pong
     Eval expr ->
-      do compiled <- dynCompileExpr expr
-         return (EvalResult (defaultProcessOutput compiled))
+      withGhc (do compiled <- dynCompileExpr expr
+                  liftIO (endResult results (EvalResult (show compiled))))
 
-defaultProcessOutput :: Dynamic -> String
-defaultProcessOutput d = show d -- fromDyn d ""
+-- | Send an end result.
+endResult :: Chan ResultType -> Result -> IO ()
+endResult chan r = writeChan chan (EndResult r)
+
+-- | Send a result of one or more results.
+addResult :: Chan ResultType -> Result -> IO ()
+addResult chan r = writeChan chan (Result r)
