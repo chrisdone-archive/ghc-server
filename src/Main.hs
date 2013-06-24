@@ -102,15 +102,15 @@ startClient handle host remotePort Server{..} =
                         let reply done x = do let direction = if done then " <- " else " .. "
                                               hostLogger Debug (show id ++ direction ++ show x)
                                               hPutLn handle l
-                                                where l = L.encode x
+                                                where l = L.encode (Response id x)
                         out <- newChan
                         writeChan serverIn (cmd,out)
                         fix (\loop ->
                               do response <- readChan out
                                  case response of
-                                   Result r -> do reply False r
+                                   Result r -> do reply False response
                                                   loop
-                                   EndResult r -> reply True r))
+                                   EndResult r -> reply True response))
   where hostLogger typ text = logger (typ (host ++ ":" ++ show remotePort ++ ": " ++ text))
         hPutLn :: Handle -> L.ByteString -> IO ()
         hPutLn h ps = L.hPut h ps >> L.hPut h (L.singleton 0x0a)

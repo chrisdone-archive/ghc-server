@@ -32,6 +32,7 @@ data Request = Request Integer Cmd
 
 -- | A response.
 data Response = Response Integer ResultType
+  deriving Show
 
 -- | Custom decoding from s-expression.
 instance L.FromLisp Request where
@@ -75,6 +76,7 @@ data Server = Server
 data ResultType
   = EndResult Result
   | Result Result
+    deriving Show
 
 -- | Custom encoding to s-expression.
 instance L.ToLisp ResultType where
