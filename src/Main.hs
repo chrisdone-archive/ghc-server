@@ -1,3 +1,11 @@
+-- TODO: Next steps
+--
+-- 1. Figure out how to load modules.
+-- 2. Figure out how to type check modules.
+-- 3. Type of symbol/info of symbol.
+-- 4. Figure out how to capture stdin.
+--
+
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -87,7 +95,7 @@ runSlave slaveIn =
 startClient :: Show a => Handle -> String -> a -> Server -> IO b
 startClient handle host remotePort Server{..} =
   do logger (Notice ("Client connected from " ++ host ++ " on port " ++ show remotePort))
-     hSetBuffering handle NoBuffering
+     hSetBuffering handle LineBuffering
      forever (do line <- B.hGetLine handle
                  case fromLispString line of
                    Left err ->
