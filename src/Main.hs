@@ -23,6 +23,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import           GHC
 import           GHC.Paths
+import           Packages
 import           System.IO
 
 -- | Main entry point.
@@ -77,12 +78,17 @@ initializeSlave =
   do initialDynFlags <- getSessionDynFlags
      setSessionDynFlags initialDynFlags
      (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags)
-     _pkgs           <- setSessionDynFlags dflags'
+     _pkgs           <- setSessionDynFlags dflags' { ghcLink = LinkInMemory
+                                                   , hscTarget = HscInterpreted
+                                                   }
+
      dflags          <- getSessionDynFlags
+     (dflags,_pkgs) <- liftIO $ initPackages dflags
+     setSessionDynFlags dflags
      mapM (fmap IIDecl . parseImportDecl) imports >>= setContext
      return ()
 
-  where flags = [] :: [String]
+  where flags = ["-package ghc","-isrc"] :: [String]
         imports = ["import Prelude"]
 
 -- | Run a GHC slave. This will receive commands and execute them

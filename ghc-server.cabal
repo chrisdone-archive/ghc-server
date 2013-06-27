@@ -21,4 +21,5 @@ executable ghc-server
                      text,
                      atto-lisp,
                      bytestring,
-                     attoparsec
+                     attoparsec,
+                     syb

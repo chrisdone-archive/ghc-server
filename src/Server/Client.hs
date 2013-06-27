@@ -16,14 +16,17 @@ clientCall withGhc cmd results =
     Eval expr ->
       withGhc (do compiled <- dynCompileExpr ("show (" ++ expr ++ ")")
                   liftIO (endResult results (EvalResult (dynString compiled))))
-    LoadFile file ->
-      withGhc (do target <- guessTarget file Nothing
+    LoadTarget string ->
+      withGhc (do target <- guessTarget string Nothing
                   setTargets [target]
                   result <- load LoadAllTargets
-                  mapM (fmap IIDecl . parseImportDecl) (imports ++ ["import X"]) >>= setContext
+                  loaded <- getModuleGraph >>= filterM isLoaded . map ms_mod_name
+                  mapM (fmap IIDecl . parseImportDecl)
+                       (imports ++ loadedImports loaded) >>= setContext
                   liftIO (endResult results (LoadResult result)))
 
   where imports = ["import Prelude"]
+        loadedImports = map (\m -> "import " ++ moduleNameString m)
 
 -- | Send an end result.
 endResult :: Chan ResultType -> Result -> IO ()
