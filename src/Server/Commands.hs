@@ -54,6 +54,8 @@ clientCall withGhc cmd results =
 --------------------------------------------------------------------------------
 -- GHC operations
 
+-- | Add any GHC logs to the given result channel.
+addLogsToResults :: GhcMonad m => Chan ResultType -> m b -> m b
 addLogsToResults results m = do
   dflags <- getSessionDynFlags
   setSessionDynFlags dflags { log_action = addLog }
