@@ -5,7 +5,8 @@ module Server.Import
   ,module Control.Monad
   ,module Control.Exception
   ,module Control.Monad.Trans
-  ,module Network)
+  ,module Network
+  ,io)
   where
 
 import Server.Types
@@ -15,3 +16,7 @@ import Control.Monad
 import Control.Exception
 import Network
 import Control.Monad.Trans
+
+-- | Gotta have.
+io :: MonadIO m => IO a -> m a
+io = liftIO

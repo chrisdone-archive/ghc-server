@@ -4,7 +4,7 @@
 
 (defstruct ghc-request
   "A request handler."
-  state cmd filter complete)
+  state cmd filter complete error)
 
 (defvar ghc-requests
   (make-hash-table)
@@ -39,16 +39,36 @@
            (let* ((rid (cadr response))
                   (request (gethash rid ghc-requests)))
              (if request
-                 (let ((payload (caddr response)))
-                   (case (car payload)
-                     ('result (apply (ghc-request-filter request)
-                                       (cdadr payload)))
-                     ('end-result (apply (ghc-request-complete request)
-                                           (cdadr payload))
-                                  (remhash rid ghc-requests))))
+                 (ghc-filter-payload request (caddr response))
                (message "Bogus result for non-existant request from server: %S" response))))
           (t (message "Bogus line from server: %S" response)))))
     (puthash pid remainder ghc-buffers)))
+
+(defun ghc-filter-payload (request payload)
+  (let ((cmd (ghc-request-cmd request))
+        (filter (ghc-request-filter request))
+        (complete (ghc-request-complete request))
+        (error (ghc-request-error request)))
+    (case (car payload)
+      ('result (if filter
+                   (apply filter (cdadr payload))
+                 (message "Partial results are not supported by this command %S: %S"
+                          cmd payload)))
+      ('end-result (if complete
+                       (apply complete (cdadr payload))
+                     (message "End results are not supported byp this command %S: %S"
+                              cmd payload))
+                   (remhash rid ghc-requests))
+      ('error-result (if error
+                         (apply error (cdr payload))
+                       (message "Error results are not handled by this command: %S\nThe error was: %S"
+                                cmd payload)))
+      (t (message "Bogus result type: %S" payload)))))
+
+(defun ghc-connect ()
+  "Connect to the GHC process."
+  (interactive)
+  (ghc-process))
 
 (defun ghc-process ()
   "Get or create a connection."
@@ -65,50 +85,109 @@
                               :filter 'ghc-filter)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Ping
 
-(ghc-process)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(ghc-send (ghc-process)
-          (make-ghc-request
-           :state nil
-           :cmd `(ping ,(round (* 1000 (float-time))))
-           :complete 'ghc-pong-complete))
+(defun ghc-ping ()
+  "Send a ping command and print delay in milliseconds."
+  (interactive)
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(ping ,(round (* 1000 (float-time))))
+             :complete 'ghc-pong-complete)))
 
 (defun ghc-pong-complete (start)
   (let ((end (round (* 1000 (float-time)))))
     (message "Ping reply: %dms" (- end start))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Eval command
 
-(ghc-send (ghc-process)
-          (make-ghc-request
-           :state nil
-           :cmd '(eval "\"Hey!\"")
-           :complete 'ghc-eval-complete))
+(defun ghc-eval (string)
+  "Evaluate an expression."
+  (interactive (list (read-from-minibuffer "Eval: ")))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(eval ,string)
+             :complete 'ghc-eval-complete)))
 
 (defun ghc-eval-complete (result)
   (message "→ %s" result))
 
+(defun ghc-eval-error (error)
+  (message "Error: %s" error))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Load command
 
-(ghc-send (ghc-process)
-          (make-ghc-request
-           :state nil
-           :cmd '(load-target "src/Main.hs")
-           :filter 'ghc-load-target-filter
-           :complete 'ghc-load-target-complete))
-
-(ghc-send (ghc-process)
-          (make-ghc-request
-           :state nil
-           :cmd '(eval "foo")
-           :filter 'ghc-eval-filter
-           :complete 'ghc-eval-complete))
+(defun ghc-load (target)
+  "Load a target (file or module)."
+  (interactive (list (read-from-minibuffer "Target: ")))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(load-target ,target)
+             :filter 'ghc-load-target-filter
+             :complete 'ghc-load-target-complete)))
 
 (defun ghc-load-target-filter (result)
   (message "Load filter: %S" result))
 
 (defun ghc-load-target-complete (result)
   (message "Load: %S" result))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Type of command
+
+(defun ghc-type (string)
+  "Get the type of the given expression."
+  (interactive (list (read-from-minibuffer "Type of: "
+                                           (haskell-ident-at-point))))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(type ,string)
+             :complete 'ghc-type-complete)))
+
+(defun ghc-type-complete (result)
+  (message ":: %s" result))
+
+(defun ghc-type-error (error)
+  (message "Error: %s" error))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Kind of command
+
+(defun ghc-kind (string)
+  "Get the kind of the given type expression."
+  (interactive (list (read-from-minibuffer "Kind of: ")))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(kind ,string)
+             :complete 'ghc-kind-complete)))
+
+(defun ghc-kind-complete (result)
+  (message ":: %s" result))
+
+(defun ghc-kind-error (error)
+  (message "Error: %s" error))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Info of command
+
+(defun ghc-info (string)
+  "Get the info of the given thing."
+  (interactive (list (read-from-minibuffer "Info of: ")))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :state nil
+             :cmd `(info ,string)
+             :complete 'ghc-info-complete)))
+
+(defun ghc-info-complete (result)
+  (message "%s" result))
+
+(defun ghc-info-error (error)
+  (message "Error: %s" error))

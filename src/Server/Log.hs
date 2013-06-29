@@ -9,4 +9,4 @@ logger l = liftIO $
     Notice n -> putStrLn ("Notice: " ++ n)
     Error n -> putStrLn ("ERROR: " ++ n)
     Debug n -> putStrLn ("Debug: " ++ n)
-    _ -> return ()
+    Fatal n -> putStrLn ("FATAL: " ++ n)

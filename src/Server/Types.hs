@@ -4,6 +4,7 @@ module Server.Types where
 
 import           BasicTypes
 import           Control.Concurrent
+import           Control.Exception
 import           Control.Monad.Trans
 import qualified Data.AttoLisp as L
 import           Data.Attoparsec.Number (Number(I))
@@ -33,6 +34,9 @@ data Cmd
   = Ping Integer
   | Eval String
   | LoadTarget String
+  | TypeOf String
+  | KindOf String
+  | InfoOf String
     deriving Show
 
 -- | Custom decoding from s-expression.
@@ -46,6 +50,9 @@ instance L.FromLisp Request where
 instance L.FromLisp Cmd where
   parseLisp (L.List (L.Symbol "ping":L.Number (I x):xs)) = return (Ping x)
   parseLisp (L.List (L.Symbol "eval":L.String x:_)) = return (Eval (T.unpack x))
+  parseLisp (L.List (L.Symbol "type":L.String x:_)) = return (TypeOf (T.unpack x))
+  parseLisp (L.List (L.Symbol "kind":L.String x:_)) = return (KindOf (T.unpack x))
+  parseLisp (L.List (L.Symbol "info":L.String x:_)) = return (InfoOf (T.unpack x))
   parseLisp (L.List (L.Symbol "load-target":L.String t:_)) = return (LoadTarget (T.unpack t))
   parseLisp l = L.typeMismatch "Cmd" l
 
@@ -56,6 +63,9 @@ data Result
   | Pong Integer
   | EvalResult String
   | LoadResult SuccessFlag
+  | TypeResult String
+  | KindResult String
+  | InfoResult String
   deriving Show
 
 -- | Custom encoding to s-expression.
@@ -64,14 +74,15 @@ instance L.ToLisp Result where
                                ,L.String (T.pack i)]
   toLisp Unit = L.List []
   toLisp (Pong i) = L.List [L.Symbol "pong",L.Number (I i)]
-  toLisp (EvalResult x) = L.List [L.Symbol "eval-result"
-                                 ,L.String (T.pack x)]
-  toLisp (LoadResult r) = L.List [L.String "load-result"
-                                 ,L.toLisp r]
+  toLisp (EvalResult x) = L.List [L.Symbol "eval-result",L.String (T.pack x)]
+  toLisp (TypeResult x) = L.List [L.Symbol "type-result",L.String (T.pack x)]
+  toLisp (KindResult x) = L.List [L.Symbol "kind-result",L.String (T.pack x)]
+  toLisp (InfoResult x) = L.List [L.Symbol "info-result",L.String (T.pack x)]
+  toLisp (LoadResult r) = L.List [L.String "load-result",L.toLisp r]
 
 -- | A GHC slave.
 data Slave = Slave
-  { slaveIn :: Chan (Ghc ())
+  { slaveIn :: Chan (SomeException -> IO (),Ghc ())
   , slaveThread :: ThreadId
   }
 
@@ -85,6 +96,7 @@ data Server = Server
 data ResultType
   = EndResult Result
   | Result Result
+  | ErrorResult SomeException
     deriving Show
 
 -- | Custom encoding to s-expression.
@@ -93,6 +105,11 @@ instance L.ToLisp ResultType where
                              ,L.toLisp r]
   toLisp (EndResult r) = L.List [L.Symbol "end-result"
                                 ,L.toLisp r]
+  toLisp (ErrorResult r) = L.List [L.Symbol "error-result"
+                                  ,L.toLisp r]
+
+instance L.ToLisp SomeException where
+  toLisp e = L.toLisp (show e)
 
 -- | Custom encoding to s-expression.
 instance L.ToLisp Response where
