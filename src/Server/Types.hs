@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Server.Types where
@@ -11,8 +12,10 @@ import           Data.Attoparsec.Number (Number(I))
 import           Data.Data hiding (tyConName)
 import           Data.Generics.Aliases
 import qualified Data.Text as T
+import           FastString
 import           GHC
 import           GhcMonad
+import           SrcLoc
 
 -- | A log type.
 data Log
@@ -66,6 +69,7 @@ data Result
   | TypeResult String
   | KindResult String
   | InfoResult String
+  | LogResult Severity SrcSpan String
   deriving Show
 
 -- | Custom encoding to s-expression.
@@ -78,7 +82,12 @@ instance L.ToLisp Result where
   toLisp (TypeResult x) = L.List [L.Symbol "type-result",L.String (T.pack x)]
   toLisp (KindResult x) = L.List [L.Symbol "kind-result",L.String (T.pack x)]
   toLisp (InfoResult x) = L.List [L.Symbol "info-result",L.String (T.pack x)]
-  toLisp (LoadResult r) = L.List [L.String "load-result",L.toLisp r]
+  toLisp (LoadResult r) = L.List [L.Symbol "load-result",L.toLisp r]
+  toLisp (LogResult severity span msg) =
+    L.List [L.Symbol "log-result"
+           ,L.toLisp severity
+           ,L.toLisp span
+           ,L.toLisp msg]
 
 -- | A GHC slave.
 data Slave = Slave
@@ -143,6 +152,32 @@ instance L.FromLisp TargetId where
     if T.isSuffixOf ".hs" i
        then return (TargetFile (T.unpack i) Nothing)
        else return (TargetModule (mkModuleName (T.unpack i)))
+
+deriving instance Show Severity
+
+instance L.ToLisp Severity where
+  toLisp t =
+    L.Symbol (case t of
+                SevOutput -> "output"
+                SevInfo -> "info"
+                SevError -> "error"
+                SevWarning -> "warning"
+                SevFatal -> "fatal")
+
+instance L.ToLisp SrcSpan where
+  toLisp (RealSrcSpan realsrcspan) = L.toLisp realsrcspan
+  toLisp (UnhelpfulSpan fs) = L.toLisp fs
+
+instance L.ToLisp RealSrcSpan where
+  toLisp span =
+    L.List [L.toLisp (srcSpanFile span)
+           ,L.toLisp (srcSpanStartLine span)
+           ,L.toLisp (srcSpanEndLine span)
+           ,L.toLisp (srcSpanStartCol span)
+           ,L.toLisp (srcSpanEndCol span)]
+
+instance L.ToLisp FastString where
+  toLisp = L.toLisp . unpackFS
 
 --------------------------------------------------------------------------------
 -- Misc

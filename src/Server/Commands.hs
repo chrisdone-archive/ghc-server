@@ -26,14 +26,17 @@ clientCall withGhc cmd results =
                          >>= setContext
                     io (endResult results (LoadResult result)))
       Eval expr ->
-        withGhc (do compiled <- dynCompileExpr ("show (" ++ expr ++ ")")
+        withGhc (do compiled <- addLogsToResults results
+                                                 (dynCompileExpr ("show (" ++ expr ++ ")"))
                     io (endResult results (EvalResult (dynString compiled))))
       TypeOf expr ->
-        withGhc (do typ <- exprType expr
+        withGhc (do typ <- addLogsToResults results
+                                            (exprType expr)
                     df <- getSessionDynFlags
                     io (endResult results (TypeResult (unlines (formatType df typ)))))
       KindOf expr ->
-        withGhc (do typ <- typeKind True expr
+        withGhc (do typ <- addLogsToResults results
+                                            (typeKind True expr)
                     df <- getSessionDynFlags
                     io (endResult results (KindResult (unlines (formatType df (snd typ))))))
       InfoOf ident ->
@@ -50,6 +53,17 @@ clientCall withGhc cmd results =
 
 --------------------------------------------------------------------------------
 -- GHC operations
+
+addLogsToResults results m = do
+  dflags <- getSessionDynFlags
+  setSessionDynFlags dflags { log_action = addLog }
+  result <- m
+  setSessionDynFlags dflags
+  return result
+
+  where addLog severity span _style msg =
+          addResult results (LogResult severity span (showSDoc msg))
+
 
 sdoc :: Outputable a => DynFlags -> a -> String
 sdoc dflags = showSDocForUser neverQualify . ppr

@@ -1,3 +1,6 @@
+{-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS -Wall #-}
+
 -- | GHC slave.
 
 module Server.Slave where
@@ -5,11 +8,9 @@ module Server.Slave where
 import Server.Import
 
 import DynFlags
-import ErrUtils
 import GHC
 import GHC.Paths
 import Packages
-import Outputable
 
 -- | Start a new GHC slave.
 newSlave :: ThreadId -> IO Slave
@@ -33,10 +34,9 @@ initializeSlave =
   do initialDynFlags <- getSessionDynFlags
      setSessionDynFlags initialDynFlags
      (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags)
-     _pkgs           <- setSessionDynFlags dflags' { ghcLink = LinkInMemory
-                                                   , hscTarget = HscInterpreted
-                                                   , ghcMode = CompManager
-                                                   , log_action = logAction
+     _pkgs           <- setSessionDynFlags dflags' { ghcLink    = LinkInMemory
+                                                   , hscTarget  = HscInterpreted
+                                                   , ghcMode    = CompManager
                                                    }
 
      dflags          <- getSessionDynFlags
@@ -45,7 +45,7 @@ initializeSlave =
      mapM (fmap IIDecl . parseImportDecl) imports >>= setContext
      return ()
 
-  where flags = ["-package ghc","-isrc"] :: [String]
+  where flags = ["-package ghc","-isrc","-Wall"] :: [String]
         imports = ["import Prelude"]
 
 -- | Run a GHC slave. This will receive commands and execute them
@@ -59,7 +59,3 @@ runSlave slaveIn =
                  (\se@(SomeException e) ->
                    do logger (Error ("Slave: " ++ show e))
                       liftIO (onError se))
-
-
-logAction :: LogAction
-logAction = defaultLogAction
