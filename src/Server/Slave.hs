@@ -15,8 +15,7 @@ import Outputable
 newSlave :: ThreadId -> IO Slave
 newSlave main =
  do inChan <- newChan
-    tid <- forkIO (gcatch (defaultErrorHandler defaultFatalMessager
-                                               defaultFlushOut
+    tid <- forkIO (gcatch (defaultErrorHandler defaultLogAction
                                                (runGhc (Just libdir)
                                                        (do logger (Notice "Starting GHC ...")
                                                            initializeSlave
@@ -61,5 +60,6 @@ runSlave slaveIn =
                    do logger (Error ("Slave: " ++ show e))
                       liftIO (onError se))
 
-logAction :: DynFlags -> Severity -> SrcSpan -> PprStyle -> MsgDoc -> IO ()
+
+logAction :: LogAction
 logAction = defaultLogAction

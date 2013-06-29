@@ -52,7 +52,7 @@ clientCall withGhc cmd results =
 -- GHC operations
 
 sdoc :: Outputable a => DynFlags -> a -> String
-sdoc dflags = showSDocForUser dflags neverQualify . ppr
+sdoc dflags = showSDocForUser neverQualify . ppr
 
 formatType :: DynFlags -> Type -> [String]
 formatType dflags = lines . sdoc dflags . snd . splitForAllTys
