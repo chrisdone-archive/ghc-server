@@ -26,8 +26,16 @@ clientCall withGhc cmd results =
                          >>= setContext
                     io (endResult results (LoadResult result)))
       Eval expr ->
-        withGhc (do compiled <- addLogsToResults results
-                                                 (dynCompileExpr ("show (" ++ expr ++ ")"))
+        withGhc (do let before = "show ("
+                        expr' = before ++
+                                       (let ls = lines expr
+                                        in unlines (take 1 ls ++
+                                                    map (replicate (length before) ' ' ++)
+                                                        (drop 1 ls)))
+                                       ++ ")"
+                    logger (Debug ("Evaluating:\n" ++ expr'))
+                    compiled <- addLogsToResults results
+                                                 (dynCompileExpr expr')
                     io (endResult results (EvalResult (dynString compiled))))
       TypeOf expr ->
         withGhc (do typ <- addLogsToResults results
@@ -46,6 +54,11 @@ clientCall withGhc cmd results =
                                    . catMaybes)
                                   (mapM getInfo names)
                     io (endResult results (InfoResult (unlines infos))))
+      Set flags ->
+        withGhc (do df <- getSessionDynFlags
+                    (dflags,_,_) <- parseDynamicFlags df (map (mkGeneralLocated "flag") [flags])
+                    void (setSessionDynFlags dflags)
+                    io (endResult results Unit))
 
   where imports = ["import Prelude"]
         loadedImports = map (\m -> "import " ++ moduleNameString m)

@@ -40,6 +40,7 @@ data Cmd
   | TypeOf String
   | KindOf String
   | InfoOf String
+  | Set String
     deriving Show
 
 -- | Custom decoding from s-expression.
@@ -57,6 +58,7 @@ instance L.FromLisp Cmd where
   parseLisp (L.List (L.Symbol "kind":L.String x:_)) = return (KindOf (T.unpack x))
   parseLisp (L.List (L.Symbol "info":L.String x:_)) = return (InfoOf (T.unpack x))
   parseLisp (L.List (L.Symbol "load-target":L.String t:_)) = return (LoadTarget (T.unpack t))
+  parseLisp (L.List (L.Symbol "set":L.String opt:_)) = return (Set (T.unpack opt))
   parseLisp l = L.typeMismatch "Cmd" l
 
 -- | A command result.
