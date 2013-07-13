@@ -45,7 +45,7 @@ initializeSlave =
      mapM (fmap IIDecl . parseImportDecl) imports >>= setContext
      return ()
 
-  where flags = ["-package ghc","-isrc","-Wall"] :: [String]
+  where flags = [] :: [String]
         imports = ["import Prelude"]
 
 -- | Run a GHC slave. This will receive commands and execute them

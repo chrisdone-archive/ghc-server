@@ -95,7 +95,7 @@
         (when process (delete-process process))
         (make-network-process :name "*ghc*"
                               :host "localhost"
-                              :service 5234
+                              :service 5233
                               :nowait t
                               :sentinel 'ghc-sentinel
                               :filter 'ghc-filter)))))
@@ -221,3 +221,18 @@
 (defun ghc-set-ok (request)
   "Handler for setting options."
   (message "Option set."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Configure packages
+
+(defun ghc-pkg-conf (opt)
+  "Set package configuration file."
+  (interactive (list (read-from-minibuffer "Package conf: ")))
+  (ghc-send (ghc-process)
+            (make-ghc-request
+             :cmd `(package-conf ,opt)
+             :complete 'ghc-pkg-conf-ok)))
+
+(defun ghc-pkg-conf-ok (request)
+  "Handler for setting package conf."
+  (message "Set package conf and initialized packages."))

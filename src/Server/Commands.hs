@@ -10,6 +10,7 @@ import Data.List
 import Data.Maybe
 import GHC
 import Outputable
+import Packages
 
 -- | Call a command, return a result.
 clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
@@ -54,10 +55,13 @@ clientCall withGhc cmd results =
                                    . catMaybes)
                                   (mapM getInfo names)
                     io (endResult results (InfoResult (unlines infos))))
-      Set flags ->
+      Set flag ->
+        withGhc (do setFlag flag
+                    io (endResult results Unit))
+      PackageConf pkgconf ->
         withGhc (do df <- getSessionDynFlags
-                    (dflags,_,_) <- parseDynamicFlags df (map (mkGeneralLocated "flag") [flags])
-                    void (setSessionDynFlags dflags)
+                    setSessionDynFlags df { extraPkgConfs = pkgconf : extraPkgConfs df  }
+                    void (io (initPackages df))
                     io (endResult results Unit))
 
   where imports = ["import Prelude"]
@@ -66,6 +70,11 @@ clientCall withGhc cmd results =
 
 --------------------------------------------------------------------------------
 -- GHC operations
+
+setFlag flag = do
+  df <- getSessionDynFlags
+  (dflags,_,_) <- parseDynamicFlags df (map (mkGeneralLocated "flag") [flag])
+  void (setSessionDynFlags dflags)
 
 -- | Add any GHC logs to the given result channel.
 addLogsToResults :: GhcMonad m => Chan ResultType -> m b -> m b
