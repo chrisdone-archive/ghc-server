@@ -59,9 +59,10 @@ clientCall withGhc cmd results =
         withGhc (do setFlag flag
                     io (endResult results Unit))
       PackageConf pkgconf ->
-        withGhc (do df <- getSessionDynFlags
-                    setSessionDynFlags df { extraPkgConfs = pkgconf : extraPkgConfs df  }
-                    void (io (initPackages df))
+        withGhc (do setFlag ("-package-conf=" ++ pkgconf)
+                    df <- getSessionDynFlags
+                    (dflags,_pkgs) <- io (initPackages df)
+                    setSessionDynFlags dflags
                     io (endResult results Unit))
 
   where imports = ["import Prelude"]
