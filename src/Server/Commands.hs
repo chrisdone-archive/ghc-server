@@ -8,9 +8,7 @@ import Server.Import
 import Data.Dynamic
 import Data.List
 import Data.Maybe
-import GHC
-import Outputable
-import Packages
+import GHC.Compat
 
 -- | Call a command, return a result.
 clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
@@ -22,7 +20,7 @@ clientCall withGhc cmd results =
                     setTargets [target]
                     result <- load LoadAllTargets
                     loaded <- getModuleGraph >>= filterM isLoaded . map ms_mod_name
-                    mapM (fmap IIDecl . parseImportDecl)
+                    mapM parseImportDecl
                          (imports ++ loadedImports loaded)
                          >>= setContext
                     io (endResult results (LoadResult result)))
@@ -45,9 +43,9 @@ clientCall withGhc cmd results =
                     io (endResult results (TypeResult (unlines (formatType df typ)))))
       KindOf expr ->
         withGhc (do typ <- addLogsToResults results
-                                            (typeKind True expr)
+                                            (typeKind expr)
                     df <- getSessionDynFlags
-                    io (endResult results (KindResult (unlines (formatType df (snd typ))))))
+                    io (endResult results (KindResult (unlines (formatType df typ)))))
       InfoOf ident ->
         withGhc (do names <- parseName ident
                     df <- getSessionDynFlags

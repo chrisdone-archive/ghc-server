@@ -16,8 +16,8 @@ startAccepter =
      server <- newServer main
      socket <- listenOn (PortNumber port)
      logger (Notice ("Listening on port " ++ show port ++ " ..."))
-     finally (forever (do (handle,host,remotePort) <- accept socket
-                          forkIO (startClient handle host remotePort server)))
+     finally (forever (do (h,host,remotePort) <- accept socket
+                          forkIO (startClient h host remotePort server)))
              (do logger (Fatal "Server killed.")
                  sClose socket)
 
@@ -29,9 +29,8 @@ newServer :: ThreadId -> IO Server
 newServer main =
   do slave <- newSlave main
      inChan <- newChan
-     let server = Server inChan
      -- Launch a command-accepting loop
-     tid <- forkIO (forever (do (cmd,replyChan) <- liftIO (readChan inChan)
+     tid <- forkIO (forever (do (cmd,replyChan) <- io (readChan inChan)
                                 newRequest slave cmd replyChan))
      return (Server inChan tid slave)
 
@@ -39,7 +38,6 @@ newServer main =
 -- immediately.
 newRequest :: Slave -> Cmd -> Chan ResultType -> IO ThreadId
 newRequest slave cmd resultsChan =
-  forkIO (do me <- myThreadId
-             let onError e = writeChan resultsChan (ErrorResult e)
+  forkIO (do let onError e = writeChan resultsChan (ErrorResult e)
                  withGHC m = writeChan (slaveIn slave) (onError,m)
              clientCall withGHC cmd resultsChan)

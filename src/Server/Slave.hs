@@ -7,10 +7,7 @@ module Server.Slave where
 
 import Server.Import
 
-import DynFlags
-import GHC
-import GHC.Paths
-import Packages
+import GHC.Compat
 
 -- | Start a new GHC slave.
 newSlave :: ThreadId -> IO Slave
@@ -42,7 +39,7 @@ initializeSlave =
      dflags          <- getSessionDynFlags
      (dflags,_pkgs) <- liftIO $ initPackages dflags
      setSessionDynFlags dflags
-     mapM (fmap IIDecl . parseImportDecl) imports >>= setContext
+     mapM parseImportDecl imports >>= setContext
      return ()
 
   where flags = [] :: [String]

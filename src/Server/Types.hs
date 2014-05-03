@@ -3,19 +3,16 @@
 
 module Server.Types where
 
-import           BasicTypes
 import           Control.Concurrent
 import           Control.Exception
 import           Control.Monad.Trans
 import qualified Data.AttoLisp as L
 import           Data.Attoparsec.Number (Number(I))
-import           Data.Data hiding (tyConName)
+import           Data.Data
 import           Data.Generics.Aliases
 import qualified Data.Text as T
-import           FastString
-import           GHC
-import           GhcMonad
-import           SrcLoc
+import           GHC.Compat hiding (MonadIO)
+import qualified GHC.Compat (liftIO)
 
 -- | A log type.
 data Log
@@ -135,7 +132,7 @@ instance L.ToLisp Response where
 
 -- | GHC has its own MonadIO.
 instance MonadIO Ghc where
-  liftIO = GhcMonad.liftIO
+  liftIO = GHC.Compat.liftIO
 
 instance Show SuccessFlag where
   show Succeeded = "Succeeded"
