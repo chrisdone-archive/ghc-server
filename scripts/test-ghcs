@@ -1,0 +1,13 @@
+for v in `ls /opt/ghc/`
+do
+  echo "Testing against GHC $v ..."
+  oldpath=$PATH
+  PATH=/opt/ghc/$v/bin:$PATH
+  echo "Setting PATH ..."
+  cabal clean > /dev/null
+  echo "Cabal installing with -O0 ..."
+  ghc --version
+  cabal install --ghc-options="-O0" -j4 > /dev/null
+  PATH=$oldpath
+done
+echo "Tested all GHCs."
