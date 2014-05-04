@@ -198,6 +198,7 @@ showSDoc = Outputable.showSDoc
 showSDoc = Outputable.showSDoc
 #endif
 
+-- | An instance of a class.
 #if __GLASGOW_HASKELL__ == 702
 type SomeInstance = Instance
 #endif
@@ -211,6 +212,7 @@ type SomeInstance = ClsInst
 type SomeInstance = ClsInst
 #endif
 
+-- | Wraps 'GHC.getInfo'.
 getInfo :: GhcMonad m => Name -> m (Maybe (TyThing, Fixity, [SomeInstance]))
 #if __GLASGOW_HASKELL__ == 702
 getInfo = GHC.getInfo
