@@ -130,10 +130,6 @@ instance L.ToLisp Response where
 --------------------------------------------------------------------------------
 -- GHC data type instances
 
--- | GHC has its own MonadIO.
-instance MonadIO Ghc where
-  liftIO = GHC.Compat.liftIO
-
 instance Show SuccessFlag where
   show Succeeded = "Succeeded"
   show Failed = "Failed"

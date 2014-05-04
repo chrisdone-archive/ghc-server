@@ -35,10 +35,12 @@ module GHC.Compat
   ,defaultErrorHandler
   ,showSDocForUser
   ,setLogAction
-  ,showSDoc)
+  ,showSDoc
+  ,getInfo)
   where
 
 import           BasicTypes hiding (Version)
+import qualified Control.Monad.Trans as Trans
 import qualified DynFlags
 import           ErrUtils
 import           Exception
@@ -63,7 +65,8 @@ import           GHC
   hiding (parseImportDecl
          ,typeKind
          ,setContext
-         ,defaultErrorHandler)
+         ,defaultErrorHandler
+         ,getInfo)
 
 -- | Wraps 'GHC.typeKind'.
 typeKind :: GhcMonad m => String -> m Kind
@@ -74,6 +77,9 @@ typeKind expr = GHC.typeKind expr
 typeKind expr = fmap snd (GHC.typeKind True expr)
 #endif
 #if __GLASGOW_HASKELL__ == 706
+typeKind expr = fmap snd (GHC.typeKind True expr)
+#endif
+#if __GLASGOW_HASKELL__ == 708
 typeKind expr = fmap snd (GHC.typeKind True expr)
 #endif
 
@@ -88,6 +94,9 @@ parseImportDecl = GHC.parseImportDecl
 #if __GLASGOW_HASKELL__ == 706
 parseImportDecl = GHC.parseImportDecl
 #endif
+#if __GLASGOW_HASKELL__ == 708
+parseImportDecl = GHC.parseImportDecl
+#endif
 
 -- | Wraps 'GHC.setContext'.
 setContext :: GhcMonad m => [ImportDecl RdrName] -> m ()
@@ -100,6 +109,9 @@ setContext = GHC.setContext . map IIDecl
 #if __GLASGOW_HASKELL__ == 706
 setContext = GHC.setContext . map IIDecl
 #endif
+#if __GLASGOW_HASKELL__ == 708
+setContext = GHC.setContext . map IIDecl
+#endif
 
 -- | Wraps 'GHC.defaultErrorHandler'.
 defaultErrorHandler :: (MonadIO m,ExceptionMonad m) => m a -> m a
@@ -110,8 +122,10 @@ defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
 defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
 #endif
 #if __GLASGOW_HASKELL__ == 706
-defaultErrorHandler = GHC.defaultErrorHandler putStrLn
-                                              (FlushOut (hFlush stdout))
+defaultErrorHandler = GHC.defaultErrorHandler putStrLn (FlushOut (hFlush stdout))
+#endif
+#if __GLASGOW_HASKELL__ == 708
+defaultErrorHandler = GHC.defaultErrorHandler putStrLn (FlushOut (hFlush stdout))
 #endif
 
 -- | Wraps 'Outputable.showSDocForUser'.
@@ -125,6 +139,9 @@ showSDocForUser _ = Outputable.showSDocForUser
 #if __GLASGOW_HASKELL__ == 706
 showSDocForUser = Outputable.showSDocForUser
 #endif
+#if __GLASGOW_HASKELL__ == 708
+showSDocForUser = Outputable.showSDocForUser
+#endif
 
 #if __GLASGOW_HASKELL__ == 702
 type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
@@ -133,6 +150,9 @@ type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
 type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
 #endif
 #if __GLASGOW_HASKELL__ == 706
+type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> MsgDoc -> IO ()
+#endif
+#if __GLASGOW_HASKELL__ == 708
 type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> MsgDoc -> IO ()
 #endif
 
@@ -156,6 +176,12 @@ setLogAction logger =
      setSessionDynFlags dflags { log_action = logger }
      return ()
 #endif
+#if __GLASGOW_HASKELL__ == 708
+setLogAction logger =
+  do dflags <- getSessionDynFlags
+     setSessionDynFlags dflags { log_action = logger }
+     return ()
+#endif
 
 -- | Wraps 'Outputable.showSDoc'.
 showSDoc :: DynFlags -> SDoc -> String
@@ -168,7 +194,49 @@ showSDoc _ = Outputable.showSDoc
 #if __GLASGOW_HASKELL__ == 706
 showSDoc = Outputable.showSDoc
 #endif
+#if __GLASGOW_HASKELL__ == 708
+showSDoc = Outputable.showSDoc
+#endif
+
+#if __GLASGOW_HASKELL__ == 702
+type SomeInstance = Instance
+#endif
+#if __GLASGOW_HASKELL__ == 704
+type SomeInstance = Instance
+#endif
+#if __GLASGOW_HASKELL__ == 706
+type SomeInstance = ClsInst
+#endif
+#if __GLASGOW_HASKELL__ == 708
+type SomeInstance = ClsInst
+#endif
+
+getInfo :: GhcMonad m => Name -> m (Maybe (TyThing, Fixity, [SomeInstance]))
+#if __GLASGOW_HASKELL__ == 702
+getInfo = GHC.getInfo
+#endif
+#if __GLASGOW_HASKELL__ == 704
+getInfo = GHC.getInfo
+#endif
+#if __GLASGOW_HASKELL__ == 706
+getInfo = GHC.getInfo
+#endif
+#if __GLASGOW_HASKELL__ == 708
+getInfo = fmap (fmap (\(a,b,c,d) -> (a,b,c))) . GHC.getInfo False
+#endif
+
+-- Missing instances
 
 #if __GLASGOW_HASKELL__ == 702
 instance Show SrcSpan where show _ = "SrcSpan"
+#endif
+
+#if __GLASGOW_HASKELL__ == 702
+instance Trans.MonadIO Ghc where liftIO = GhcMonad.liftIO
+#endif
+#if __GLASGOW_HASKELL__ == 704
+instance Trans.MonadIO Ghc where liftIO = GhcMonad.liftIO
+#endif
+#if __GLASGOW_HASKELL__ == 706
+instance Trans.MonadIO Ghc where liftIO = GhcMonad.liftIO
 #endif
