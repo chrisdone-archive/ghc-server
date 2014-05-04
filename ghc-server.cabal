@@ -1,5 +1,5 @@
 name:                ghc-server
-version:             0.1
+version:             0.0
 synopsis:            A server interface to GHC.
 description:         A server interface to GHC.
 license:             BSD3
