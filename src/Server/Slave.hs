@@ -13,8 +13,7 @@ import GHC.Compat
 newSlave :: ThreadId -> IO Slave
 newSlave main =
  do inChan <- newChan
-    tid <- forkIO (gcatch (defaultErrorHandler defaultLogAction
-                                               (runGhc (Just libdir)
+    tid <- forkIO (gcatch (defaultErrorHandler (runGhc (Just libdir)
                                                        (do logger (Notice "Starting GHC ...")
                                                            initializeSlave
                                                            runSlave inChan)))

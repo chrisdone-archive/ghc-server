@@ -31,25 +31,41 @@ module GHC.Compat
   ,module MonadUtils
   ,parseImportDecl
   ,typeKind
-  ,setContext)
+  ,setContext
+  ,defaultErrorHandler
+  ,showSDocForUser
+  ,setLogAction
+  ,showSDoc)
   where
 
-import BasicTypes hiding (Version)
-import DynFlags
-import FastString
-import GHC
+import           BasicTypes hiding (Version)
+import qualified DynFlags
+import           ErrUtils
+import           Exception
+import           FastString
+import qualified GHC
+import           GHC.Paths
+import           GhcMonad
+import           MonadUtils
+import qualified Outputable
+import           Packages
+import           SrcLoc
+import           System.IO
+
+import           DynFlags
+  hiding (LogAction)
+
+import           Outputable
+  hiding (showSDocForUser
+         ,showSDoc)
+
+import           GHC
   hiding (parseImportDecl
          ,typeKind
-         ,setContext)
-import qualified GHC
-import GHC.Paths
-import GhcMonad
-import MonadUtils
-import Outputable
-import Packages
-import SrcLoc
+         ,setContext
+         ,defaultErrorHandler)
 
--- | Wraps 'typeKind'.
+-- | Wraps 'GHC.typeKind'.
 typeKind :: GhcMonad m => String -> m Kind
 #if __GLASGOW_HASKELL__ == 702
 typeKind expr = GHC.typeKind expr
@@ -57,8 +73,11 @@ typeKind expr = GHC.typeKind expr
 #if __GLASGOW_HASKELL__ == 704
 typeKind expr = fmap snd (GHC.typeKind True expr)
 #endif
+#if __GLASGOW_HASKELL__ == 706
+typeKind expr = fmap snd (GHC.typeKind True expr)
+#endif
 
--- | Wraps 'parseImportDecl'.
+-- | Wraps 'GHC.parseImportDecl'.
 parseImportDecl :: GhcMonad m => String -> m (ImportDecl RdrName)
 #if __GLASGOW_HASKELL__ == 702
 parseImportDecl = GHC.parseImportDecl
@@ -66,14 +85,88 @@ parseImportDecl = GHC.parseImportDecl
 #if __GLASGOW_HASKELL__ == 704
 parseImportDecl = GHC.parseImportDecl
 #endif
+#if __GLASGOW_HASKELL__ == 706
+parseImportDecl = GHC.parseImportDecl
+#endif
 
--- | Wraps 'setContext'.
+-- | Wraps 'GHC.setContext'.
 setContext :: GhcMonad m => [ImportDecl RdrName] -> m ()
 #if __GLASGOW_HASKELL__ == 702
 setContext = GHC.setContext []
 #endif
 #if __GLASGOW_HASKELL__ == 704
 setContext = GHC.setContext . map IIDecl
+#endif
+#if __GLASGOW_HASKELL__ == 706
+setContext = GHC.setContext . map IIDecl
+#endif
+
+-- | Wraps 'GHC.defaultErrorHandler'.
+defaultErrorHandler :: (MonadIO m,ExceptionMonad m) => m a -> m a
+#if __GLASGOW_HASKELL__ == 702
+defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
+#endif
+#if __GLASGOW_HASKELL__ == 704
+defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
+#endif
+#if __GLASGOW_HASKELL__ == 706
+defaultErrorHandler = GHC.defaultErrorHandler putStrLn
+                                              (FlushOut (hFlush stdout))
+#endif
+
+-- | Wraps 'Outputable.showSDocForUser'.
+showSDocForUser :: DynFlags -> PrintUnqualified -> SDoc -> String
+#if __GLASGOW_HASKELL__ == 702
+showSDocForUser _ = Outputable.showSDocForUser
+#endif
+#if __GLASGOW_HASKELL__ == 704
+showSDocForUser _ = Outputable.showSDocForUser
+#endif
+#if __GLASGOW_HASKELL__ == 706
+showSDocForUser = Outputable.showSDocForUser
+#endif
+
+#if __GLASGOW_HASKELL__ == 702
+type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
+#endif
+#if __GLASGOW_HASKELL__ == 704
+type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
+#endif
+#if __GLASGOW_HASKELL__ == 706
+type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> MsgDoc -> IO ()
+#endif
+
+-- | Sets the log action for the session.
+setLogAction :: GhcMonad m => LogAction -> m ()
+#if __GLASGOW_HASKELL__ == 704
+setLogAction logger =
+  do dflags <- getSessionDynFlags
+     setSessionDynFlags dflags { log_action = logger dflags }
+     return ()
+#endif
+#if __GLASGOW_HASKELL__ == 702
+setLogAction logger =
+  do dflags <- getSessionDynFlags
+     setSessionDynFlags dflags { log_action = logger dflags }
+     return ()
+#endif
+#if __GLASGOW_HASKELL__ == 706
+setLogAction logger =
+  do dflags <- getSessionDynFlags
+     setSessionDynFlags dflags { log_action = logger }
+     return ()
+#endif
+
+-- | Wraps 'Outputable.showSDoc'.
+showSDoc :: DynFlags -> SDoc -> String
+#if __GLASGOW_HASKELL__ == 702
+showSDoc _ = Outputable.showSDoc
+#endif
+#if __GLASGOW_HASKELL__ == 704
+showSDoc _ = Outputable.showSDoc
+#endif
+#if __GLASGOW_HASKELL__ == 706
+showSDoc = Outputable.showSDoc
 #endif
 
 #if __GLASGOW_HASKELL__ == 702

@@ -79,17 +79,17 @@ setFlag flag = do
 addLogsToResults :: GhcMonad m => Chan ResultType -> m b -> m b
 addLogsToResults results m = do
   dflags <- getSessionDynFlags
-  setSessionDynFlags dflags { log_action = addLog }
+  setLogAction addLog
   result <- m
   setSessionDynFlags dflags
   return result
 
-  where addLog severity span _style msg =
-          addResult results (LogResult severity span (showSDoc msg))
+  where addLog dflags severity span _style msg =
+          addResult results (LogResult severity span (showSDoc dflags msg))
 
 
 sdoc :: Outputable a => DynFlags -> a -> String
-sdoc dflags = showSDocForUser neverQualify . ppr
+sdoc dflags = showSDocForUser dflags neverQualify . ppr
 
 formatType :: DynFlags -> Type -> [String]
 formatType dflags = lines . sdoc dflags . snd . splitForAllTys
