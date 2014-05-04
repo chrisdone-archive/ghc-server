@@ -28,6 +28,7 @@ module GHC.Compat
   ,module GhcMonad
   ,module SrcLoc
   ,module FastString
+  ,module MonadUtils
   ,parseImportDecl
   ,typeKind
   ,setContext)
@@ -43,6 +44,7 @@ import GHC
 import qualified GHC
 import GHC.Paths
 import GhcMonad
+import MonadUtils
 import Outputable
 import Packages
 import SrcLoc
@@ -52,10 +54,16 @@ typeKind :: GhcMonad m => String -> m Kind
 #if __GLASGOW_HASKELL__ == 702
 typeKind expr = GHC.typeKind expr
 #endif
+#if __GLASGOW_HASKELL__ == 704
+typeKind expr = fmap snd (GHC.typeKind True expr)
+#endif
 
 -- | Wraps 'parseImportDecl'.
 parseImportDecl :: GhcMonad m => String -> m (ImportDecl RdrName)
 #if __GLASGOW_HASKELL__ == 702
+parseImportDecl = GHC.parseImportDecl
+#endif
+#if __GLASGOW_HASKELL__ == 704
 parseImportDecl = GHC.parseImportDecl
 #endif
 
@@ -63,6 +71,9 @@ parseImportDecl = GHC.parseImportDecl
 setContext :: GhcMonad m => [ImportDecl RdrName] -> m ()
 #if __GLASGOW_HASKELL__ == 702
 setContext = GHC.setContext []
+#endif
+#if __GLASGOW_HASKELL__ == 704
+setContext = GHC.setContext . map IIDecl
 #endif
 
 #if __GLASGOW_HASKELL__ == 702

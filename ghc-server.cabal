@@ -15,7 +15,7 @@ executable ghc-server
   hs-source-dirs:    src/
   build-depends:
     -- Hard versions
-    ghc == 7.2.2,
+    ghc == 7.2.* || ==7.4.*,
     -- Ranged versions
     base >= 4 && < 5,
     -- Min versions
