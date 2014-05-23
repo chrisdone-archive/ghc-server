@@ -94,8 +94,8 @@
       (progn
         (when process (delete-process process))
         (make-network-process :name "*ghc*"
-                              :host "localhost"
-                              :service 5233
+                              :host (read-from-minibuffer "Host: " "localhost")
+                              :service (string-to-number (read-from-minibuffer "Port: " "5233"))
                               :nowait t
                               :sentinel 'ghc-sentinel
                               :filter 'ghc-filter)))))
