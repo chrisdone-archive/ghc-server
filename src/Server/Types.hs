@@ -43,14 +43,16 @@ data Cmd
 
 -- | Custom decoding from s-expression.
 instance L.FromLisp Request where
-  parseLisp (L.List (L.Symbol "request":L.Number (I x):cmd:_)) = do
+  parseLisp (L.List (L.Symbol "request":i:cmd:_)) = do
     cmd <- L.parseLisp cmd
+    x <- L.parseLisp i
     return (Request x cmd)
   parseLisp l = L.typeMismatch "Request" l
 
 -- | Custom decoding from s-expression.
 instance L.FromLisp Cmd where
-  parseLisp (L.List (L.Symbol "ping":L.Number (I x):xs)) = return (Ping x)
+  parseLisp (L.List (L.Symbol "ping":i:xs)) = do x <- L.parseLisp i
+                                                 return (Ping x)
   parseLisp (L.List (L.Symbol "eval":L.String x:_)) = return (Eval (T.unpack x))
   parseLisp (L.List (L.Symbol "type":L.String x:_)) = return (TypeOf (T.unpack x))
   parseLisp (L.List (L.Symbol "kind":L.String x:_)) = return (KindOf (T.unpack x))
@@ -75,14 +77,13 @@ data Result
 
 -- | Custom encoding to s-expression.
 instance L.ToLisp Result where
-  toLisp (BadInput i) = L.List [L.Symbol "bad-input"
-                               ,L.String (T.pack i)]
   toLisp Unit = L.List []
-  toLisp (Pong i) = L.List [L.Symbol "pong",L.Number (I i)]
-  toLisp (EvalResult x) = L.List [L.Symbol "eval-result",L.String (T.pack x)]
-  toLisp (TypeResult x) = L.List [L.Symbol "type-result",L.String (T.pack x)]
-  toLisp (KindResult x) = L.List [L.Symbol "kind-result",L.String (T.pack x)]
-  toLisp (InfoResult x) = L.List [L.Symbol "info-result",L.String (T.pack x)]
+  toLisp (BadInput i) = L.List [L.Symbol "bad-input",L.toLisp i]
+  toLisp (Pong i) = L.List [L.Symbol "pong",L.toLisp i]
+  toLisp (EvalResult x) = L.List [L.Symbol "eval-result",L.toLisp x]
+  toLisp (TypeResult x) = L.List [L.Symbol "type-result",L.toLisp x]
+  toLisp (KindResult x) = L.List [L.Symbol "kind-result",L.toLisp x]
+  toLisp (InfoResult x) = L.List [L.Symbol "info-result",L.toLisp x]
   toLisp (LoadResult r) = L.List [L.Symbol "load-result",L.toLisp r]
   toLisp (LogResult severity span msg) =
     L.List [L.Symbol "log-result"
