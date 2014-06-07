@@ -53,7 +53,6 @@ runSlave
 runSlave slaveInp =
   do actions <- liftIO (getChanContents slaveInp)
      forM_ actions protect
-
   where protect (onError,m) =
           gcatch m
                  (\se@(SomeException e) ->
