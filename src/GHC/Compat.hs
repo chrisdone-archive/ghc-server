@@ -29,6 +29,7 @@ module GHC.Compat
   ,module SrcLoc
   ,module FastString
   ,module MonadUtils
+  ,module Exception
   ,parseImportDecl
   ,typeKind
   ,setContext

@@ -28,26 +28,30 @@ newSlave main =
 initializeSlave :: Ghc ()
 initializeSlave =
   do initialDynFlags <- getSessionDynFlags
-     setSessionDynFlags initialDynFlags
-     (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags)
+     _ <- setSessionDynFlags initialDynFlags
+     (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags')
      _pkgs           <- setSessionDynFlags dflags' { ghcLink    = LinkInMemory
                                                    , hscTarget  = HscInterpreted
                                                    , ghcMode    = CompManager
                                                    }
 
-     dflags          <- getSessionDynFlags
-     (dflags,_pkgs) <- liftIO $ initPackages dflags
-     setSessionDynFlags dflags
+     dflags <- getSessionDynFlags
+     (dflags'',_pkgs) <- io (initPackages dflags)
+     _ <- setSessionDynFlags dflags''
      mapM parseImportDecl imports >>= setContext
      return ()
 
-  where flags = [] :: [String]
+  where flags' = [] :: [String]
         imports = ["import Prelude"]
 
 -- | Run a GHC slave. This will receive commands and execute them
 -- sequentially in a single thread.
-runSlave slaveIn =
-  do actions <- liftIO (getChanContents slaveIn)
+runSlave
+  :: (Server.Import.MonadIO m, ExceptionMonad m,
+      GHC.Compat.MonadIO m) =>
+     Chan (SomeException -> IO b, m b) -> m ()
+runSlave slaveInp =
+  do actions <- liftIO (getChanContents slaveInp)
      forM_ actions protect
 
   where protect (onError,m) =
