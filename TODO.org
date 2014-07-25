@@ -1,2 +1,11 @@
-* TODO Run statements.
-* TODO Capture stderr/stdout/stdin.
+* DONE Init packages support for HSENV
+  CLOSED: [2014-07-25 Fri 12:42]
+** DONE Parse the PACKAGE_DB_FOR_GHC env var
+   CLOSED: [2014-07-25 Fri 12:42]
+   CLOCK: [2014-07-25 Fri 12:33]--[2014-07-25 Fri 12:42] =>  0:09
+* TODO Run statements
+** TODO Use exprType to _always_ get the type of the expression
+If the following approach fails, we always have the type to display.
+** TODO Try to cast it to IO String
+Use (>>= return . show) to get such a type.
+* TODO Capture stderr/stdout/stdin
