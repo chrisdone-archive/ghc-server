@@ -7,7 +7,7 @@ do
   cabal clean > /dev/null
   echo "Cabal installing with -O0 ..."
   ghc --version
-  cabal install --ghc-options="-O0" -j4 > /dev/null
+  cabal install --force-reinstalls --ghc-options="-O0" -j4 > /dev/null
   PATH=$oldpath
 done
 echo "Tested all GHCs."
