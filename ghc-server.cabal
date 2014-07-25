@@ -26,4 +26,5 @@ executable ghc-server
     atto-lisp >= 0.2,
     bytestring >= 0.9,
     attoparsec >= 0.10,
-    syb >= 0.4
+    syb >= 0.4,
+    foreign-store
