@@ -20,16 +20,17 @@ startClient :: Show a => Handle -> String -> a -> Server -> IO b
 startClient handle host remotePort server@Server{..} =
   do logger (Notice ("Client connected from " ++ host ++ " on port " ++ show remotePort))
      hSetBuffering handle LineBuffering
-     forever (do line <- B.hGetLine handle
-                 case fromLispString line of
-                   Left err ->
-                     do hostLogger Error (show line)
-                        hostLogger Error err
-                        let reply = BadInput err
-                        hostLogger Debug ("<- " ++ show reply)
-                        hPutLn handle (L.encode reply)
-                   Right (Request id cmd) ->
-                     void (forkIO (handleRequest handle id cmd server hostLogger)))
+     forever
+       (do line <- B.hGetLine handle
+           case fromLispString line of
+             Left err ->
+               do hostLogger Error (show line)
+                  hostLogger Error err
+                  let reply = BadInput err
+                  hostLogger Debug ("<- " ++ show reply)
+                  hPutLn handle (L.encode reply)
+             Right (Request id cmd) ->
+               void (forkIO (handleRequest handle id cmd server hostLogger)))
   where hostLogger typ text = logger (typ (host ++ ":" ++ show remotePort ++ ": " ++ text))
 
 -- | Handle an incoming command request from the client. It will send
