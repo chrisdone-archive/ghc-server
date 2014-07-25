@@ -1,4 +1,5 @@
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS -Wall #-}
 
 -- | GHC slave.
@@ -6,6 +7,7 @@
 module Server.Slave where
 
 import Server.Import
+import System.Environment
 
 import GHC.Compat
 
@@ -28,21 +30,26 @@ newSlave main =
 initializeSlave :: Ghc ()
 initializeSlave =
   do initialDynFlags <- getSessionDynFlags
-     _ <- setSessionDynFlags initialDynFlags
-     (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") flags')
-     _pkgs           <- setSessionDynFlags dflags' { ghcLink    = LinkInMemory
-                                                   , hscTarget  = HscInterpreted
-                                                   , ghcMode    = CompManager
-                                                   }
-
-     dflags <- getSessionDynFlags
-     (dflags'',_pkgs) <- io (initPackages dflags)
+     userFlags <- makeUserFlags
+     (dflags',_,_)   <- parseDynamicFlags initialDynFlags (map (mkGeneralLocated "flag") userFlags)
+     _ <- setSessionDynFlags (dflags' { hscTarget = HscInterpreted
+                                      , ghcLink = LinkInMemory })
+     (dflags'',_packageids) <- liftIO (initPackages dflags')
+     io (putStrLn (showppr dflags'' _packageids))
      _ <- setSessionDynFlags dflags''
      mapM parseImportDecl imports >>= setContext
      return ()
 
-  where flags' = [] :: [String]
-        imports = ["import Prelude"]
+  where imports = ["import Prelude"]
+
+-- | Make user flags, if HSENV is activated then use the
+-- PACKAGE_DB_FOR_GHC environment variable for package flags.
+makeUserFlags :: Ghc [String]
+makeUserFlags =
+  do env <- liftIO getEnvironment
+     case lookup "HSENV" env >> lookup "PACKAGE_DB_FOR_GHC" env of
+       Just flags -> return (words flags)
+       Nothing -> return []
 
 -- | Run a GHC slave. This will receive commands and execute them
 -- sequentially in a single thread.
@@ -58,3 +65,7 @@ runSlave slaveInp =
                  (\se@(SomeException e) ->
                    do logger (Error ("Slave: " ++ show e))
                       liftIO (onError se))
+
+-- | Pretty print something to string.
+showppr :: Outputable a => DynFlags -> a -> String
+showppr dflags = showSDocForUser dflags neverQualify . ppr
