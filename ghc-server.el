@@ -149,7 +149,7 @@
              :complete 'ghc-type-complete)))
 
 (defun ghc-type-complete (request result)
-  (message ":: %s" result))
+  (message "Type: %s" result))
 
 (defun ghc-type-error (request error)
   (message "Error: %s" error))
@@ -167,7 +167,7 @@
              :complete 'ghc-kind-complete)))
 
 (defun ghc-kind-complete (request result)
-  (message ":: %s" result))
+  (message "Kind: %s" result))
 
 (defun ghc-kind-error (request error)
   (message "Error: %s" error))
@@ -200,12 +200,16 @@
             (make-ghc-request
              :state (current-buffer)
              :cmd `(eval ,string)
-             :complete 'ghc-mode-eval-complete)))
+             :complete 'ghc-mode-eval-complete
+             :error 'ghc-mode-eval-error)))
 
 (defun ghc-mode-eval-complete (request result)
   "Handler for a completed eval command."
   (message "Result: %S" result))
 
+(defun ghc-mode-eval-error (request error)
+  "Handler for a completed eval command."
+  (message "Evaluation error: %s" (replace-regexp-in-string "\n" " " error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Set

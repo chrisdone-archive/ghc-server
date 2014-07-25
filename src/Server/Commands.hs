@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | Client commands.
 
 module Server.Commands where
@@ -25,17 +26,7 @@ clientCall withGhc cmd results =
                          >>= setContext
                     io (endResult results (LoadResult result)))
       Eval expr ->
-        withGhc (do let before = "show ("
-                        expr' = before ++
-                                       (let ls = lines expr
-                                        in unlines (take 1 ls ++
-                                                    map (replicate (length before) ' ' ++)
-                                                        (drop 1 ls)))
-                                       ++ ")"
-                    logger (Debug ("Evaluating:\n" ++ expr'))
-                    compiled <- addLogsToResults results
-                                                 (dynCompileExpr expr')
-                    io (endResult results (EvalResult (dynString compiled))))
+        withGhc (doExpr results expr)
       TypeOf expr ->
         withGhc (do typ <- addLogsToResults results
                                             (exprType expr)
@@ -66,6 +57,98 @@ clientCall withGhc cmd results =
   where imports = ["import Prelude"]
         loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"
+
+doExpr results expr =
+  do dflags <- getSessionDynFlags
+     typeResult <- gtry (exprType expr)
+     case typeResult of
+       Left (err :: SomeException) ->
+         do enames <- gtry (runDecls expr)
+            case enames of
+              Right names ->
+                io (putStrLn ("Bound some names: " ++ sdoc dflags names))
+              Left (err :: SomeException) ->
+                tryEvaluating results dflags expr
+       Right ty ->
+         do logger (Debug ("Got type: " ++ sdoc dflags ty))
+            tryEvaluating results dflags expr
+
+tryEvaluating results dflags expr =
+  do dyn <- addLogsToResults results (tryDynCompileExpr (exprPure expr))
+     case fmap fromDynamic dyn of
+       Right (Just str) ->
+         do logger (Debug ("Running showable expression value..."))
+            io (endResult results (EvalResult str))
+       _ ->
+         do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOShowable expr))
+            case fmap fromDynamic dyn of
+              Right (Just action) ->
+                do logger (Debug ("Running IO action returning Show instance..."))
+                   result <- liftIO action
+                   io (endResult results (EvalResult result))
+              _ ->
+                do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOUnknown expr))
+                   case fmap fromDynamic dyn of
+                     Right (Just action) ->
+                       do logger (Debug ("Running IO action returning unshowable value..."))
+                          () <- liftIO action
+                          return ()
+                     _ ->
+                       runStatement expr
+
+runStatement expr =
+  do logger (Debug ("runStmt"))
+     result <- runStmt expr RunToCompletion
+     logger (Debug ("Got result."))
+     case result of
+       RunOk names -> return ()
+       RunException e -> io (putStrLn ("Run exception: " ++ show e))
+       RunBreak{} -> return ()
+
+-- | Make an expression for evaluating pure expressions and printing
+-- the result.
+exprPure :: String -> String
+exprPure expr =
+  concat
+    [before
+    ,(let ls = lines expr
+      in intercalate "\n" (take 1 ls ++
+                           map (replicate (length before) ' ' ++)
+                               (drop 1 ls)))
+    ,")"]
+  where before = "Prelude.show ("
+
+-- | Make an expression for running IO actions and printing the
+-- result.
+exprIOShowable :: String -> String
+exprIOShowable expr =
+  concat
+    [before
+    ,(let ls = lines expr
+      in intercalate "\n" (take 1 ls ++
+                           map (replicate (length before) ' ' ++)
+                               (drop 1 ls)))
+    ,") >>= return . show"]
+  where before = "("
+
+-- | Make an expression for running IO actions and printing the
+-- result.
+exprIOUnknown :: String -> String
+exprIOUnknown expr =
+  concat
+    [before
+    ,(let ls = lines expr
+      in intercalate "\n" (take 1 ls ++
+                           map (replicate (length before) ' ' ++)
+                               (drop 1 ls)))
+    ,") >> return ()"]
+  where before = "("
+
+-- | Try to compile an expression.
+tryDynCompileExpr :: GhcMonad m => String -> m (Either SomeException Dynamic)
+tryDynCompileExpr expr =
+  gcatch (fmap Right (dynCompileExpr expr))
+         (\(e::SomeException) -> return (Left e))
 
 --------------------------------------------------------------------------------
 -- GHC operations
