@@ -51,8 +51,9 @@ instance L.FromLisp Request where
 
 -- | Custom decoding from s-expression.
 instance L.FromLisp Cmd where
-  parseLisp (L.List (L.Symbol "ping":i:xs)) = do x <- L.parseLisp i
-                                                 return (Ping x)
+  parseLisp (L.List (L.Symbol "ping":i:xs)) =
+    do x <- L.parseLisp i
+       return (Ping x)
   parseLisp (L.List (L.Symbol "eval":L.String x:_)) = return (Eval (T.unpack x))
   parseLisp (L.List (L.Symbol "type":L.String x:_)) = return (TypeOf (T.unpack x))
   parseLisp (L.List (L.Symbol "kind":L.String x:_)) = return (KindOf (T.unpack x))
@@ -71,20 +72,31 @@ data Result
   | LoadResult SuccessFlag
   | TypeResult String
   | KindResult String
+  | DeclResult [String]
   | InfoResult String
   | LogResult Severity SrcSpan String
   deriving Show
 
 -- | Custom encoding to s-expression.
 instance L.ToLisp Result where
-  toLisp Unit = L.List []
-  toLisp (BadInput i) = L.List [L.Symbol "bad-input",L.toLisp i]
-  toLisp (Pong i) = L.List [L.Symbol "pong",L.toLisp i]
-  toLisp (EvalResult x) = L.List [L.Symbol "eval-result",L.toLisp x]
-  toLisp (TypeResult x) = L.List [L.Symbol "type-result",L.toLisp x]
-  toLisp (KindResult x) = L.List [L.Symbol "kind-result",L.toLisp x]
-  toLisp (InfoResult x) = L.List [L.Symbol "info-result",L.toLisp x]
-  toLisp (LoadResult r) = L.List [L.Symbol "load-result",L.toLisp r]
+  toLisp Unit =
+    L.List []
+  toLisp (BadInput i) =
+    L.List [L.Symbol "bad-input",L.toLisp i]
+  toLisp (Pong i) =
+    L.List [L.Symbol "pong",L.toLisp i]
+  toLisp (EvalResult x) =
+    L.List [L.Symbol "eval-result",L.toLisp x]
+  toLisp (TypeResult x) =
+    L.List [L.Symbol "type-result",L.toLisp x]
+  toLisp (DeclResult x) =
+    L.List [L.Symbol "decl-result",L.toLisp x]
+  toLisp (KindResult x) =
+    L.List [L.Symbol "kind-result",L.toLisp x]
+  toLisp (InfoResult x) =
+    L.List [L.Symbol "info-result",L.toLisp x]
+  toLisp (LoadResult r) =
+    L.List [L.Symbol "load-result",L.toLisp r]
   toLisp (LogResult severity span msg) =
     L.List [L.Symbol "log-result"
            ,L.toLisp severity

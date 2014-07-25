@@ -18,14 +18,15 @@
   "Send a command request and handle the results."
   (let ((rid (setq ghc-request-number (1+ ghc-request-number))))
     (puthash rid request ghc-requests)
-    (process-send-string
-     p
-     (concat (replace-regexp-in-string
-              "\n"
-              "\\\\n"
-              (format "%S" `(request ,rid
-                                     ,(ghc-request-cmd request))))
-             "\n"))))
+    (let ((msg (replace-regexp-in-string
+                "\n"
+                "\\\\n"
+                (format "%S" `(request ,rid
+                                       ,(ghc-request-cmd request))))))
+      (message "-> %s" msg)
+      (process-send-string
+       p
+       (concat msg "\n")))))
 
 (defun ghc-sentinel (p sig)
   "Handles connection events."
@@ -51,35 +52,41 @@
            (let* ((rid (cadr response))
                   (request (gethash rid ghc-requests)))
              (if request
-                 (ghc-filter-payload request (caddr response))
+                 (ghc-filter-payload rid request (caddr response))
                (message "Bogus result for non-existant request from server: %S" response))))
           (t (message "Bogus line from server: %S" response)))))
     (puthash pid remainder ghc-buffers)))
 
-(defun ghc-filter-payload (request payload)
+(defun ghc-filter-payload (rid request payload)
   "Handle the final payload, calling appropriate handlers."
   (let ((cmd (ghc-request-cmd request))
         (filter (ghc-request-filter request))
         (complete (ghc-request-complete request))
         (error (ghc-request-error request)))
+    (message "<- %S"
+             (list (car payload)
+                   rid
+                   (cadr payload)))
     (case (car payload)
-      ('result (if filter
-                   (apply filter (cons request (cdadr payload)))
-                 (message "Partial results are not supported by this command %S: %S"
-                          cmd payload)))
-      ('end-result
+      (result
+       (if filter
+           (apply filter (list request (cadr payload)))
+         (message "Partial results are not supported by this command %S: %S"
+                  cmd payload)))
+      (end-result
        (remhash rid ghc-requests)
        (if complete
-           (apply complete (cons request (cdadr payload)))
+           (apply complete (list request (cadr payload)))
          (message "End results are not supported byp this command %S: %S"
                   cmd payload)))
-      ('error-result
+      (error-result
        (remhash rid ghc-requests)
        (if error
-           (apply error (cons request (cdr payload)))
+           (apply error (list request (cadr payload)))
          (message "Error results are not handled by this command: %S\nThe error was: %S"
                   cmd payload)))
-      (t (message "Bogus result type: %S" payload)))))
+      (t
+       (message "Bogus result type: %S" payload)))))
 
 (defun ghc-connect ()
   "Connect to the GHC process."
@@ -92,13 +99,16 @@
     (if (and process (process-live-p process))
         process
       (progn
-        (when process (delete-process process))
-        (make-network-process :name "*ghc*"
-                              :host (read-from-minibuffer "Host: " "localhost")
-                              :service (string-to-number (read-from-minibuffer "Port: " "5233"))
-                              :nowait t
-                              :sentinel 'ghc-sentinel
-                              :filter 'ghc-filter)))))
+        (when process
+          (delete-process process))
+        (make-network-process
+         :name "*ghc*"
+         :host (read-from-minibuffer "Host: " "localhost")
+         :service (string-to-number
+                   (read-from-minibuffer "Port: " "5233"))
+         :nowait t
+         :sentinel 'ghc-sentinel
+         :filter 'ghc-filter)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Ping
@@ -112,9 +122,12 @@
              :cmd `(ping ,(round (* 1000 (float-time))))
              :complete 'ghc-pong-complete)))
 
-(defun ghc-pong-complete (request start)
-  (let ((end (round (* 1000 (float-time)))))
-    (message "Ping reply: %dms" (- end start))))
+(defun ghc-pong-complete (request result)
+  (ecase (car result)
+    (pong
+     (let ((start (nth 1 result))
+           (end (round (* 1000 (float-time)))))
+       (message "Ping reply: %dms" (- end start))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load command
@@ -127,32 +140,41 @@
              :state nil
              :cmd `(load-target ,target)
              :filter 'ghc-load-target-filter
-             :complete 'ghc-load-target-complete)))
+             :complete 'ghc-load-target-complete
+             :error 'ghc-load-target-error)))
 
 (defun ghc-load-target-filter (request result)
   (message "Load filter: %S" result))
 
 (defun ghc-load-target-complete (request result)
-  (message "Load: %S" result))
+  (ecase (car result)
+    (load-result
+     (ecase (nth 1 result)
+       (succeeded (message "OK."))))))
+
+(defun ghc-load-target-error (request result)
+  (message "Load error: %s" result))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Type of command
 
 (defun ghc-type (string)
   "Get the type of the given expression."
-  (interactive (list (read-from-minibuffer "Type of: "
-                                           (haskell-ident-at-point))))
+  (interactive
+   (list
+    (read-from-minibuffer "Type of: " (haskell-ident-at-point))))
   (ghc-send (ghc-process)
             (make-ghc-request
              :state nil
              :cmd `(type ,string)
-             :complete 'ghc-type-complete)))
+             :complete 'ghc-type-complete
+             :error 'ghc-type-error)))
 
 (defun ghc-type-complete (request result)
-  (message "Type: %s" result))
+  (message "Type: %s" (cadr result)))
 
 (defun ghc-type-error (request error)
-  (message "Error: %s" error))
+  (message "Type query error: %s" error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Kind of command
@@ -164,13 +186,14 @@
             (make-ghc-request
              :state nil
              :cmd `(kind ,string)
-             :complete 'ghc-kind-complete)))
+             :complete 'ghc-kind-complete
+             :error 'ghc-kind-error)))
 
 (defun ghc-kind-complete (request result)
-  (message "Kind: %s" result))
+  (message "Kind: %s" (cadr result)))
 
 (defun ghc-kind-error (request error)
-  (message "Error: %s" error))
+  (message "Kind query error: %s" error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Info of command
@@ -182,13 +205,14 @@
             (make-ghc-request
              :state nil
              :cmd `(info ,string)
-             :complete 'ghc-info-complete)))
+             :complete 'ghc-info-complete
+             :error 'ghc-info-error)))
 
 (defun ghc-info-complete (request result)
-  (message "%s" result))
+  (message "%s" (cadr result)))
 
 (defun ghc-info-error (request error)
-  (message "Error: %s" error))
+  (message "Info error: %s" error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Eval command
@@ -201,11 +225,25 @@
              :state (current-buffer)
              :cmd `(eval ,string)
              :complete 'ghc-mode-eval-complete
+             :filter 'ghc-mode-eval-filter
              :error 'ghc-mode-eval-error)))
+
+(defun ghc-mode-eval-filter (request type)
+  "Handler for a completed eval command."
+  (ecase (car type)
+    (type-result
+     (message ":: %s" (cadr type)))))
 
 (defun ghc-mode-eval-complete (request result)
   "Handler for a completed eval command."
-  (message "Result: %S" result))
+  (ecase (car result)
+    (eval-result
+     (message "Eval result: %s" (cadr result)))
+    (decl-result
+     (message "Declared names: %s"
+              (mapconcat 'identity
+                         (cadr result)
+                         ", ")))))
 
 (defun ghc-mode-eval-error (request error)
   "Handler for a completed eval command."
@@ -222,7 +260,7 @@
              :cmd `(set ,opt)
              :complete 'ghc-set-ok)))
 
-(defun ghc-set-ok (request)
+(defun ghc-set-ok (request _)
   "Handler for setting options."
   (message "Option set."))
 

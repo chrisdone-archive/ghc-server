@@ -15,7 +15,8 @@ import GHC.Compat
 clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
 clientCall withGhc cmd results =
  do case cmd of
-      Ping i -> do endResult results (Pong i)
+      Ping i ->
+        endResult results (Pong i)
       LoadTarget string ->
         withGhc (do target <- guessTarget string Nothing
                     setTargets [target]
@@ -66,11 +67,12 @@ doExpr results expr =
          do enames <- gtry (runDecls expr)
             case enames of
               Right names ->
-                io (putStrLn ("Bound some names: " ++ sdoc dflags names))
+                io (endResult results (DeclResult (map (sdoc dflags) names)))
               Left (err :: SomeException) ->
                 tryEvaluating results dflags expr
        Right ty ->
-         do logger (Debug ("Got type: " ++ sdoc dflags ty))
+         do io (addResult results (TypeResult (sdoc dflags ty)))
+            logger (Debug ("Got type: " ++ sdoc dflags ty))
             tryEvaluating results dflags expr
 
 tryEvaluating results dflags expr =
@@ -94,15 +96,16 @@ tryEvaluating results dflags expr =
                           () <- liftIO action
                           return ()
                      _ ->
-                       runStatement expr
+                       runStatement results expr
 
-runStatement expr =
+runStatement results expr =
   do logger (Debug ("runStmt"))
      result <- runStmt expr RunToCompletion
      logger (Debug ("Got result."))
+     dflags <- getSessionDynFlags
      case result of
-       RunOk names -> return ()
-       RunException e -> io (putStrLn ("Run exception: " ++ show e))
+       RunOk names -> io (endResult results (DeclResult (map (sdoc dflags) names)))
+       RunException e -> throw e
        RunBreak{} -> return ()
 
 -- | Make an expression for evaluating pure expressions and printing
