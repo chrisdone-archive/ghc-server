@@ -3,9 +3,12 @@
 ** DONE Parse the PACKAGE_DB_FOR_GHC env var
    CLOSED: [2014-07-25 Fri 12:42]
    CLOCK: [2014-07-25 Fri 12:33]--[2014-07-25 Fri 12:42] =>  0:09
-* TODO Run statements
-** TODO Use exprType to _always_ get the type of the expression
+* DONE Run statements
+  CLOSED: [2014-07-25 Fri 17:47]
+** DONE Use exprType to _always_ get the type of the expression
+   CLOSED: [2014-07-25 Fri 17:47]
 If the following approach fails, we always have the type to display.
-** TODO Try to cast it to IO String
+** DONE Try to cast it to IO String
+   CLOSED: [2014-07-25 Fri 17:47]
 Use (>>= return . show) to get such a type.
 * TODO Capture stderr/stdout/stdin
