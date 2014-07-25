@@ -1,2 +1,2 @@
 :set -isrc
-:set -package ghc -hide-package monads-tf
+:set -package ghc
