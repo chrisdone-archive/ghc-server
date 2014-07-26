@@ -11,6 +11,7 @@ If the following approach fails, we always have the type to display.
 ** DONE Try to cast it to IO String
    CLOSED: [2014-07-25 Fri 17:47]
 Use (>>= return . show) to get such a type.
-* TODO Capture stderr/stdout/stdin
-  CLOCK: [2014-07-25 Fri 21:28]
+* DONE Capture stdout
+  CLOSED: [2014-07-26 Sat 16:29]
+  CLOCK: [2014-07-25 Fri 21:28]--[2014-07-26 Sat 16:29] => 19:01
   CLOCK: [2014-07-25 Fri 18:00]--[2014-07-25 Fri 18:32] =>  0:32
