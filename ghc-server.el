@@ -234,6 +234,11 @@
   (ecase (car type)
     (type-result
      (message ":: %s" (cadr type)))
+    (eval-import
+     (message "Imported, context:\n%s"
+              (mapconcat 'identity
+                         (cadr type)
+                         "\n")))
     (eval-stderr
      (message "Stderr: %s" (cadr type)))
     (eval-stdout
@@ -242,6 +247,8 @@
 (defun ghc-mode-eval-complete (request result)
   "Handler for a completed eval command."
   (ecase (car result)
+    (unit
+     (message "Completed."))
     (eval-result
      (message "Eval result: %s" (cadr result)))
     (decl-result

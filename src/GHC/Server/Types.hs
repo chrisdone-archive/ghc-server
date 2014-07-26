@@ -68,6 +68,7 @@ data Result
   | Unit
   | Pong Integer
   | EvalResult String
+  | EvalImport [String]
   | EvalStdout ByteString
   | EvalStderr ByteString
   | LoadResult SuccessFlag
@@ -84,6 +85,8 @@ instance L.ToLisp Result where
     L.List []
   toLisp (EvalStdout e) =
     L.List [L.Symbol "eval-stdout",L.toLisp (T.decodeUtf8 e)]
+  toLisp (EvalImport e) =
+    L.List [L.Symbol "eval-import",L.toLisp e]
   toLisp (EvalStderr e) =
     L.List [L.Symbol "eval-stderr",L.toLisp (T.decodeUtf8 e)]
   toLisp (BadInput i) =

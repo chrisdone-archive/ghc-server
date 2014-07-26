@@ -74,7 +74,9 @@ tryImportOrDecls results expr =
      result <- gtry (parseImportDecl expr)
      case result of
        Right imp ->
-         addToContext imp
+         do addToContext imp
+            ctx <- getContext
+            io (addResult results (EvalImport (map (sdoc dflags) ctx)))
        Left (_ :: SomeException) ->
          do typeResult <- gtry (exprType expr)
             case typeResult of
@@ -125,7 +127,7 @@ tryRunning results stmt =
               Right (Just (constrain -> action)) ->
                 do logger (Debug ("Running IO action returning unshowable value..."))
                    () <- liftIO (action handleStdin)
-                   return ()
+                   io (endResult results Unit)
               _ ->
                 runStatement results stmt
   where constrain action =
