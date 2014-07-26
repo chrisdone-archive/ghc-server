@@ -5,15 +5,12 @@ module GHC.Server.Types where
 
 import           Control.Concurrent
 import           Control.Exception
-
 import qualified Data.AttoLisp as L
-
 import           Data.ByteString (ByteString)
 import           Data.Data
 import           Data.Generics.Aliases
 import qualified Data.Text as T
-
-
+import qualified Data.Text.Encoding as T
 import           GHC.Compat hiding (MonadIO)
 
 -- | A log type.
@@ -86,9 +83,9 @@ instance L.ToLisp Result where
   toLisp Unit =
     L.List []
   toLisp (EvalStdout e) =
-    L.List [L.Symbol "eval-stdout",L.toLisp (show e)]
+    L.List [L.Symbol "eval-stdout",L.toLisp (T.decodeUtf8 e)]
   toLisp (EvalStderr e) =
-    L.List [L.Symbol "eval-stderr",L.toLisp (show e)]
+    L.List [L.Symbol "eval-stderr",L.toLisp (T.decodeUtf8 e)]
   toLisp (BadInput i) =
     L.List [L.Symbol "bad-input",L.toLisp i]
   toLisp (Pong i) =

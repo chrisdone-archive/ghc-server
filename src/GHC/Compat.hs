@@ -37,7 +37,8 @@ module GHC.Compat
   ,showSDocForUser
   ,setLogAction
   ,showSDoc
-  ,getInfo)
+  ,getInfo
+  ,addToContext)
   where
 
 import           BasicTypes hiding (Version)
@@ -112,6 +113,14 @@ setContext = GHC.setContext . map IIDecl
 #endif
 #if __GLASGOW_HASKELL__ == 708
 setContext = GHC.setContext . map IIDecl
+#endif
+
+-- | Add an import declaration to the context with `setContext`.
+addToContext :: GhcMonad m => ImportDecl RdrName -> m ()
+#if __GLASGOW_HASKELL__ == 706
+addToContext i =
+  do ctx <- getContext
+     GHC.setContext (IIDecl i : ctx)
 #endif
 
 -- | Wraps 'GHC.defaultErrorHandler'.

@@ -1,8 +1,10 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Client commands.
 
-module GHC.Server.Commands where
+module GHC.Server.Commands (clientCall) where
 
+import GHC.Server.IO
 import GHC.Server.Import
 
 import Data.Dynamic
@@ -22,11 +24,11 @@ clientCall withGhc cmd results =
                     result <- load LoadAllTargets
                     loaded <- getModuleGraph >>= filterM isLoaded . map ms_mod_name
                     mapM parseImportDecl
-                         (imports ++ loadedImports loaded)
+                         (necessaryImports ++ loadedImports loaded)
                          >>= setContext
                     io (endResult results (LoadResult result)))
       Eval expr ->
-        withGhc (doExpr results expr)
+        withGhc (tryImportOrDecls results expr)
       TypeOf expr ->
         withGhc (do typ <- addLogsToResults results
                                             (exprType expr)
@@ -54,52 +56,93 @@ clientCall withGhc cmd results =
                     setSessionDynFlags dflags
                     io (endResult results Unit))
 
-  where imports = ["import Prelude","import GHC.Server.IO"]
-        loadedImports = map (\m -> "import " ++ moduleNameString m)
+  where loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"
 
-doExpr results expr =
+-- | Try to run the expression as an import line:
+--
+-- import F
+--
+-- Or as a declaration:
+--
+-- data X = X
+--
+-- Otherwise try evaluating it as an expression.
+tryImportOrDecls :: Chan ResultType -> String -> Ghc ()
+tryImportOrDecls results expr =
   do dflags <- getSessionDynFlags
-     typeResult <- gtry (exprType expr)
-     case typeResult of
-       Left (err :: SomeException) ->
-         do enames <- gtry (runDecls expr)
-            case enames of
-              Right names ->
-                io (endResult results (DeclResult (map (sdoc dflags) names)))
+     result <- gtry (parseImportDecl expr)
+     case result of
+       Right imp ->
+         addToContext imp
+       Left (_ :: SomeException) ->
+         do typeResult <- gtry (exprType expr)
+            case typeResult of
               Left (err :: SomeException) ->
-                tryEvaluating results dflags expr
-       Right ty ->
-         do io (addResult results (TypeResult (sdoc dflags ty)))
-            logger (Debug ("Got type: " ++ sdoc dflags ty))
-            tryEvaluating results dflags expr
+                do enames <- gtry (runDecls expr)
+                   case enames of
+                     Right names ->
+                       io (endResult results (DeclResult (map (sdoc dflags) names)))
+                     Left (err :: SomeException) ->
+                       tryEvaluating results expr
+              Right ty ->
+                do io (addResult results (TypeResult (sdoc dflags ty)))
+                   logger (Debug ("Got type: " ++ sdoc dflags ty))
+                   tryEvaluating results expr
 
-tryEvaluating results dflags expr =
+-- | Try evaluating it as an expression.
+--
+-- 23 * 53
+--
+-- Otherwise try running it as an IO action.
+tryEvaluating :: Chan ResultType -> String -> Ghc ()
+tryEvaluating results expr =
   do dyn <- addLogsToResults results (tryDynCompileExpr (exprPure expr))
      case fmap fromDynamic dyn of
        Right (Just str) ->
          do logger (Debug ("Running showable expression value..."))
             io (endResult results (EvalResult str))
        _ ->
-         do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOShowable expr))
-            case fmap fromDynamic dyn of
-              Right (Just action) ->
-                do logger (Debug ("Running IO action returning Show instance..."))
-                   result <- liftIO action
-                   io (endResult results (EvalResult result))
-              _ ->
-                do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOUnknown expr))
-                   case fmap fromDynamic dyn of
-                     Right (Just action) ->
-                       do logger (Debug ("Running IO action returning unshowable value..."))
-                          () <- liftIO action
-                          return ()
-                     _ ->
-                       runStatement results expr
+         tryRunning results expr
 
-runStatement results expr =
+-- | Try running it as an IO action.
+--
+-- getLine
+-- putStrLn \"Hello!\"
+--
+-- Otherwise try running it as an interactive statement.
+tryRunning :: Chan ResultType -> String -> Ghc ()
+tryRunning results stmt =
+  do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOShowable stmt))
+     case fmap fromDynamic dyn of
+       Right (Just (constrain -> action)) ->
+         do logger (Debug ("Running IO action returning Show instance..."))
+            result <- liftIO (action handleStdin)
+            io (endResult results (EvalResult result))
+       _ ->
+         do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOUnknown stmt))
+            case fmap fromDynamic dyn of
+              Right (Just (constrain -> action)) ->
+                do logger (Debug ("Running IO action returning unshowable value..."))
+                   () <- liftIO (action handleStdin)
+                   return ()
+              _ ->
+                runStatement results stmt
+  where constrain action =
+          asTypeOf action (runIO (return undefined))
+        handleStdin bytes =
+          addResult results (EvalStdout bytes)
+
+-- | Try running it as an interactive statement.
+--
+-- let x = 123
+-- x <- return 123
+--
+-- Otherwise give up.
+runStatement :: Chan ResultType -> String -> Ghc ()
+runStatement results stmt =
   do logger (Debug ("runStmt"))
-     result <- runStmt expr RunToCompletion
+     result <- runStmt stmt RunToCompletion
      logger (Debug ("Got result."))
      dflags <- getSessionDynFlags
      case result of
@@ -130,8 +173,8 @@ exprIOShowable expr =
       in intercalate "\n" (take 1 ls ++
                            map (replicate (length before) ' ' ++)
                                (drop 1 ls)))
-    ,") >>= return . show"]
-  where before = "GHC.Server.IO.runIO ("
+    ,") >>= return . show)"]
+  where before = "GHC.Server.IO.runIO (("
 
 -- | Make an expression for running IO actions and printing the
 -- result.
@@ -143,8 +186,8 @@ exprIOUnknown expr =
       in intercalate "\n" (take 1 ls ++
                            map (replicate (length before) ' ' ++)
                                (drop 1 ls)))
-    ,") >> return ()"]
-  where before = "GHC.Server.IO.runIO ("
+    ,") >> return ())"]
+  where before = "GHC.Server.IO.runIO (("
 
 -- | Try to compile an expression.
 tryDynCompileExpr :: GhcMonad m => String -> m (Either SomeException Dynamic)
@@ -155,6 +198,8 @@ tryDynCompileExpr expr =
 --------------------------------------------------------------------------------
 -- GHC operations
 
+-- | Apply a flag.
+setFlag :: GhcMonad m => String -> m ()
 setFlag flag = do
   df <- getSessionDynFlags
   (dflags,_,_) <- parseDynamicFlags df (map (mkGeneralLocated "flag") [flag])
@@ -172,14 +217,13 @@ addLogsToResults results m = do
   where addLog dflags severity span _style msg =
           addResult results (LogResult severity span (showSDoc dflags msg))
 
+-- | Render an outputable thing.
 sdoc :: Outputable a => DynFlags -> a -> String
 sdoc dflags = showSDocForUser dflags neverQualify . ppr
 
+-- | Pretty print a type.
 formatType :: DynFlags -> Type -> [String]
 formatType dflags = lines . sdoc dflags . snd . splitForAllTys
-
-dynString :: Dynamic -> String
-dynString d = fromDyn d ""
 
 --------------------------------------------------------------------------------
 -- Command replying

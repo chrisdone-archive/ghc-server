@@ -6,7 +6,8 @@ module GHC.Server.Import
   ,module Control.Exception
   ,module Control.Monad.Trans
   ,module Network
-  ,io)
+  ,io
+  ,necessaryImports)
   where
 
 import           GHC.Server.Types
@@ -22,3 +23,8 @@ import           Network
 -- | Gotta have.
 io :: MonadIO m => IO a -> m a
 io = Trans.liftIO
+
+necessaryImports :: [String]
+necessaryImports =
+  ["import Prelude"
+  ,"import GHC.Server.IO"]

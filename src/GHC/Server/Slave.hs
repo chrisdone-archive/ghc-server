@@ -37,10 +37,8 @@ initializeSlave =
      (dflags'',_packageids) <- liftIO (initPackages dflags')
      io (putStrLn (showppr dflags'' _packageids))
      _ <- setSessionDynFlags dflags''
-     mapM parseImportDecl imports >>= setContext
+     mapM parseImportDecl necessaryImports >>= setContext
      return ()
-
-  where imports = ["import Prelude"]
 
 -- | Make user flags, if HSENV is activated then use the
 -- PACKAGE_DB_FOR_GHC environment variable for package flags.
