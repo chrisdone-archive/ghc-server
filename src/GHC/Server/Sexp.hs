@@ -1,6 +1,6 @@
 -- | A module to contain the magnitude of s-expression parsing.
 
-module Server.Sexp where
+module GHC.Server.Sexp where
 
 import qualified Data.AttoLisp              as L
 import qualified Data.Attoparsec            as P

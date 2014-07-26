@@ -1,10 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Client commands.
 
-module Server.Commands where
+module GHC.Server.Commands where
 
-import Server.Types
-import Server.Import
+import GHC.Server.Import
 
 import Data.Dynamic
 import Data.List
@@ -55,7 +54,7 @@ clientCall withGhc cmd results =
                     setSessionDynFlags dflags
                     io (endResult results Unit))
 
-  where imports = ["import Prelude"]
+  where imports = ["import Prelude","import GHC.Server.IO"]
         loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"
 
@@ -132,7 +131,7 @@ exprIOShowable expr =
                            map (replicate (length before) ' ' ++)
                                (drop 1 ls)))
     ,") >>= return . show"]
-  where before = "("
+  where before = "GHC.Server.IO.runIO ("
 
 -- | Make an expression for running IO actions and printing the
 -- result.
@@ -145,7 +144,7 @@ exprIOUnknown expr =
                            map (replicate (length before) ' ' ++)
                                (drop 1 ls)))
     ,") >> return ()"]
-  where before = "("
+  where before = "GHC.Server.IO.runIO ("
 
 -- | Try to compile an expression.
 tryDynCompileExpr :: GhcMonad m => String -> m (Either SomeException Dynamic)
@@ -172,7 +171,6 @@ addLogsToResults results m = do
 
   where addLog dflags severity span _style msg =
           addResult results (LogResult severity span (showSDoc dflags msg))
-
 
 sdoc :: Outputable a => DynFlags -> a -> String
 sdoc dflags = showSDocForUser dflags neverQualify . ppr

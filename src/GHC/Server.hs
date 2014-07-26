@@ -2,14 +2,14 @@
 
 -- | Main socket server.
 
-module Server.Server where
+module GHC.Server where
+
+import GHC.Server.Client
+import GHC.Server.Commands
+import GHC.Server.Import
+import GHC.Server.Slave
 
 import Data.IORef
-import Server.Client
-import Server.Commands
-import Server.Import
-import Server.Slave
-
 import System.IO
 
 -- | Start a server.

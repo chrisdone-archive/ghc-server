@@ -10,9 +10,20 @@ category:            Development
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable ghc-server
-  main-is:           Main.hs
-  hs-source-dirs:    src/
+library
+  exposed-modules:   GHC.Server,
+                     GHC.Server.IO
+  other-modules:     GHC.Server.Commands
+                     GHC.Server.Server
+                     GHC.Server.Client
+                     GHC.Server.Slave
+                     GHC.Server.Log
+                     GHC.Server.Types
+                     GHC.Server.Import
+                     GHC.Server.Sexp
+                     GHC.Compat
+  hs-source-dirs:    src
+  ghc-options:       -O2 -Wall
   build-depends:
     -- Hard versions
     ghc == 7.2.* || ==7.4.* || == 7.6.* || == 7.8.*,
@@ -27,4 +38,15 @@ executable ghc-server
     bytestring >= 0.9,
     attoparsec >= 0.10,
     syb >= 0.4,
-    foreign-store
+    foreign-store,
+    bifunctors,
+    unix
+
+executable ghc-server
+  main-is:           Main.hs
+  hs-source-dirs:    src/main
+  ghc-options:       -O2 -Wall -threaded
+  build-depends:
+                  base >= 4 && < 5
+                , ghc-server
+                , network

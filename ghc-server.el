@@ -103,9 +103,10 @@
           (delete-process process))
         (make-network-process
          :name "*ghc*"
-         :host (read-from-minibuffer "Host: " "localhost")
-         :service (string-to-number
-                   (read-from-minibuffer "Port: " "5233"))
+         :host (or "localhost" (read-from-minibuffer "Host: " "localhost"))
+         :service (or 5233
+                      (string-to-number
+                       (read-from-minibuffer "Port: " "5233")))
          :nowait t
          :sentinel 'ghc-sentinel
          :filter 'ghc-filter)))))
@@ -232,7 +233,11 @@
   "Handler for a completed eval command."
   (ecase (car type)
     (type-result
-     (message ":: %s" (cadr type)))))
+     (message ":: %s" (cadr type)))
+    (eval-stderr
+     (message "Stderr: %s" (cadr type)))
+    (eval-stdout
+     (message "Stdout: %s" (cadr type)))))
 
 (defun ghc-mode-eval-complete (request result)
   "Handler for a completed eval command."

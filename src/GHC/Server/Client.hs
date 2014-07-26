@@ -2,10 +2,10 @@
 
 -- | Client connection handler and message forwarder/receiver.
 
-module Server.Client where
+module GHC.Server.Client where
 
-import           Server.Import
-import           Server.Sexp
+import           GHC.Server.Import
+import           GHC.Server.Sexp
 
 import           Control.Monad.Fix
 import qualified Data.AttoLisp as L

@@ -4,12 +4,12 @@
 
 -- | GHC slave.
 
-module Server.Slave where
+module GHC.Server.Slave where
 
-import Server.Import
-import System.Environment
-
+import GHC.Server.Import
 import GHC.Compat
+
+import System.Environment
 
 -- | Start a new GHC slave.
 newSlave :: ThreadId -> IO Slave
@@ -54,7 +54,7 @@ makeUserFlags =
 -- | Run a GHC slave. This will receive commands and execute them
 -- sequentially in a single thread.
 runSlave
-  :: (Server.Import.MonadIO m, ExceptionMonad m,
+  :: (GHC.Server.Import.MonadIO m, ExceptionMonad m,
       GHC.Compat.MonadIO m) =>
      Chan (SomeException -> IO b, m b) -> m ()
 runSlave slaveInp =

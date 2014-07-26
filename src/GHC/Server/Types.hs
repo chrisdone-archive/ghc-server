@@ -1,18 +1,20 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Server.Types where
+module GHC.Server.Types where
 
 import           Control.Concurrent
 import           Control.Exception
-import           Control.Monad.Trans
+
 import qualified Data.AttoLisp as L
-import           Data.Attoparsec.Number (Number(I))
+
+import           Data.ByteString (ByteString)
 import           Data.Data
 import           Data.Generics.Aliases
 import qualified Data.Text as T
+
+
 import           GHC.Compat hiding (MonadIO)
-import qualified GHC.Compat (liftIO)
 
 -- | A log type.
 data Log
@@ -69,6 +71,8 @@ data Result
   | Unit
   | Pong Integer
   | EvalResult String
+  | EvalStdout ByteString
+  | EvalStderr ByteString
   | LoadResult SuccessFlag
   | TypeResult String
   | KindResult String
@@ -81,6 +85,10 @@ data Result
 instance L.ToLisp Result where
   toLisp Unit =
     L.List []
+  toLisp (EvalStdout e) =
+    L.List [L.Symbol "eval-stdout",L.toLisp (show e)]
+  toLisp (EvalStderr e) =
+    L.List [L.Symbol "eval-stderr",L.toLisp (show e)]
   toLisp (BadInput i) =
     L.List [L.Symbol "bad-input",L.toLisp i]
   toLisp (Pong i) =
