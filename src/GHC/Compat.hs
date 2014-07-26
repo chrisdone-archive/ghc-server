@@ -117,7 +117,17 @@ setContext = GHC.setContext . map IIDecl
 
 -- | Add an import declaration to the context with `setContext`.
 addToContext :: GhcMonad m => ImportDecl RdrName -> m ()
+#if __GLASGOW_HASKELL__ == 704
+addToContext i =
+  do ctx <- getContext
+     GHC.setContext (IIDecl i : ctx)
+#endif
 #if __GLASGOW_HASKELL__ == 706
+addToContext i =
+  do ctx <- getContext
+     GHC.setContext (IIDecl i : ctx)
+#endif
+#if __GLASGOW_HASKELL__ == 708
 addToContext i =
   do ctx <- getContext
      GHC.setContext (IIDecl i : ctx)
