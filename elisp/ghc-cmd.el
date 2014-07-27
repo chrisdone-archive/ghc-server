@@ -63,6 +63,7 @@
   (ecase (car result)
     (load-result
      (ecase (nth 1 result)
+       (failed (message "Loading module failed."))
        (succeeded (message "OK."))))))
 
 (defun ghc-cmd-load-target-error (request result)
