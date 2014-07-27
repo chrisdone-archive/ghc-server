@@ -138,13 +138,18 @@
 
 (defun ghc-con-make ()
   "Make a connection and locally assign it."
-  (set (make-local-variable 'ghc-con)
-       (ghc-con-create "test")))
+  (let* ((name "test") ;; TODO: Figure this out.
+         (con (ghc-con-create name)))
+    (set (make-local-variable 'ghc-con)
+         name)
+    con))
 
 (defun ghc-con ()
   "Get the current GHC connection."
   (if (bound-and-true-p ghc-con)
-      ghc-con
+      (if (stringp ghc-con)
+          (ghc-con-create ghc-con)
+        (ghc-con-make))
     (ghc-con-make)))
 
 (provide 'ghc-con)
