@@ -14,7 +14,7 @@ import GHC.Compat
 
 -- | Call a command, return a result.
 clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
-clientCall withGhc cmd results =
+clientCall runGhc cmd results =
  do case cmd of
       Ping i ->
         endResult results (Pong i)
@@ -28,7 +28,7 @@ clientCall withGhc cmd results =
                          >>= setContext
                     io (endResult results (LoadResult result)))
       Eval expr ->
-        withGhc (tryImportOrDecls results expr)
+        withGhc (do tryImportOrDecls results expr)
       TypeOf expr ->
         withGhc (do typ <- addLogsToResults results
                                             (exprType expr)
@@ -55,9 +55,9 @@ clientCall withGhc cmd results =
                     (dflags,_pkgs) <- io (initPackages df)
                     setSessionDynFlags dflags
                     io (endResult results Unit))
-
   where loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"
+        withGhc = runGhc . addLogsToResults results
 
 -- | Try to run the expression as an import line:
 --

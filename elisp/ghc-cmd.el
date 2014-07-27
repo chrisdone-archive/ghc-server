@@ -57,7 +57,11 @@
     :error 'ghc-cmd-load-target-error)))
 
 (defun ghc-cmd-load-target-filter (request result)
-  (message "Load filter: %S" result))
+  (ecase (car result)
+    (log-result
+     (message "%s: %s"
+              (elt (nth 2 result) 0)
+              (nth 3 result)))))
 
 (defun ghc-cmd-load-target-complete (request result)
   (ecase (car result)
