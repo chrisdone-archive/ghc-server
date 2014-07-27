@@ -30,13 +30,11 @@ clientCall runGhc cmd results =
       Eval expr ->
         withGhc (do tryImportOrDecls results expr)
       TypeOf expr ->
-        withGhc (do typ <- addLogsToResults results
-                                            (exprType expr)
+        withGhc (do typ <- exprType expr
                     df <- getSessionDynFlags
                     io (endResult results (TypeResult (unlines (formatType df typ)))))
       KindOf expr ->
-        withGhc (do typ <- addLogsToResults results
-                                            (typeKind expr)
+        withGhc (do typ <- typeKind expr
                     df <- getSessionDynFlags
                     io (endResult results (KindResult (unlines (formatType df typ)))))
       InfoOf ident ->
@@ -99,7 +97,7 @@ tryImportOrDecls results expr =
 -- Otherwise try running it as an IO action.
 tryEvaluating :: Chan ResultType -> String -> Ghc ()
 tryEvaluating results expr =
-  do dyn <- addLogsToResults results (tryDynCompileExpr (exprPure expr))
+  do dyn <- tryDynCompileExpr (exprPure expr)
      case fmap fromDynamic dyn of
        Right (Just str) ->
          do logger (Debug ("Running showable expression value..."))
@@ -115,14 +113,14 @@ tryEvaluating results expr =
 -- Otherwise try running it as an interactive statement.
 tryRunning :: Chan ResultType -> String -> Ghc ()
 tryRunning results stmt =
-  do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOShowable stmt))
+  do dyn <- tryDynCompileExpr (exprIOShowable stmt)
      case fmap fromDynamic dyn of
        Right (Just (constrain -> action)) ->
          do logger (Debug ("Running IO action returning Show instance..."))
             result <- liftIO (action handleStdin)
             io (endResult results (EvalResult result))
        _ ->
-         do dyn <- addLogsToResults results (tryDynCompileExpr (exprIOUnknown stmt))
+         do dyn <- tryDynCompileExpr (exprIOUnknown stmt)
             case fmap fromDynamic dyn of
               Right (Just (constrain -> action)) ->
                 do logger (Debug ("Running IO action returning unshowable value..."))
