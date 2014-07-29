@@ -30,6 +30,7 @@ module GHC.Compat
   ,module FastString
   ,module MonadUtils
   ,module Exception
+  ,module HscTypes
   ,parseImportDecl
   ,typeKind
   ,setContext
@@ -50,6 +51,7 @@ import           FastString
 import qualified GHC
 import           GHC.Paths
 import           GhcMonad
+import           HscTypes
 import           MonadUtils
 import qualified Outputable
 import           Packages

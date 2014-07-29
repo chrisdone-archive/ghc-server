@@ -141,14 +141,19 @@ tryRunning results stmt =
 -- Otherwise give up.
 runStatement :: Chan ResultType -> String -> Ghc ()
 runStatement results stmt =
-  do logger (Debug ("runStmt"))
-     result <- runStmt stmt RunToCompletion
-     logger (Debug ("Got result."))
+  do result <- gtry (runStmt stmt RunToCompletion)
      dflags <- getSessionDynFlags
      case result of
-       RunOk names -> io (endResult results (DeclResult (map (sdoc dflags) names)))
-       RunException e -> throw e
-       RunBreak{} -> return ()
+       Left (SomeException e :: SomeException) ->
+         throw e
+       Right r ->
+         case r of
+           RunOk names ->
+             io (endResult results (DeclResult (map (sdoc dflags) names)))
+           RunException e ->
+             throw e
+           RunBreak{} ->
+             return ()
 
 -- | Make an expression for evaluating pure expressions and printing
 -- the result.
