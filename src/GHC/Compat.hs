@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
--- | Compatibility layer for GHC.
+-- | Compatibility layer for GHC. Supports GHC 7.4, 7.6, 7.8.
 --
 -- None of the ghc-server project should import from the GHC API
 -- directly, it should import via this layer. It exports everything
@@ -72,9 +72,6 @@ import           GHC
 
 -- | Wraps 'GHC.typeKind'.
 typeKind :: GhcMonad m => String -> m Kind
-#if __GLASGOW_HASKELL__ == 702
-typeKind expr = GHC.typeKind expr
-#endif
 #if __GLASGOW_HASKELL__ == 704
 typeKind expr = fmap snd (GHC.typeKind True expr)
 #endif
@@ -87,9 +84,6 @@ typeKind expr = fmap snd (GHC.typeKind True expr)
 
 -- | Wraps 'GHC.parseImportDecl'.
 parseImportDecl :: GhcMonad m => String -> m (ImportDecl RdrName)
-#if __GLASGOW_HASKELL__ == 702
-parseImportDecl = GHC.parseImportDecl
-#endif
 #if __GLASGOW_HASKELL__ == 704
 parseImportDecl = GHC.parseImportDecl
 #endif
@@ -102,9 +96,6 @@ parseImportDecl = GHC.parseImportDecl
 
 -- | Wraps 'GHC.setContext'.
 setContext :: GhcMonad m => [ImportDecl RdrName] -> m ()
-#if __GLASGOW_HASKELL__ == 702
-setContext = GHC.setContext []
-#endif
 #if __GLASGOW_HASKELL__ == 704
 setContext = GHC.setContext . map IIDecl
 #endif
@@ -135,9 +126,6 @@ addToContext i =
 
 -- | Wraps 'GHC.defaultErrorHandler'.
 defaultErrorHandler :: (MonadIO m,ExceptionMonad m) => m a -> m a
-#if __GLASGOW_HASKELL__ == 702
-defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
-#endif
 #if __GLASGOW_HASKELL__ == 704
 defaultErrorHandler = GHC.defaultErrorHandler defaultLogAction
 #endif
@@ -150,9 +138,6 @@ defaultErrorHandler = GHC.defaultErrorHandler putStrLn (FlushOut (hFlush stdout)
 
 -- | Wraps 'Outputable.showSDocForUser'.
 showSDocForUser :: DynFlags -> PrintUnqualified -> SDoc -> String
-#if __GLASGOW_HASKELL__ == 702
-showSDocForUser _ = Outputable.showSDocForUser
-#endif
 #if __GLASGOW_HASKELL__ == 704
 showSDocForUser _ = Outputable.showSDocForUser
 #endif
@@ -163,9 +148,6 @@ showSDocForUser = Outputable.showSDocForUser
 showSDocForUser = Outputable.showSDocForUser
 #endif
 
-#if __GLASGOW_HASKELL__ == 702
-type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
-#endif
 #if __GLASGOW_HASKELL__ == 704
 type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> Message -> IO ()
 #endif
@@ -179,12 +161,6 @@ type LogAction = DynFlags -> Severity -> SrcSpan -> PprStyle -> MsgDoc -> IO ()
 -- | Sets the log action for the session.
 setLogAction :: GhcMonad m => LogAction -> m ()
 #if __GLASGOW_HASKELL__ == 704
-setLogAction logger =
-  do dflags <- getSessionDynFlags
-     setSessionDynFlags dflags { log_action = logger dflags }
-     return ()
-#endif
-#if __GLASGOW_HASKELL__ == 702
 setLogAction logger =
   do dflags <- getSessionDynFlags
      setSessionDynFlags dflags { log_action = logger dflags }
@@ -205,9 +181,6 @@ setLogAction logger =
 
 -- | Wraps 'Outputable.showSDoc'.
 showSDoc :: DynFlags -> SDoc -> String
-#if __GLASGOW_HASKELL__ == 702
-showSDoc _ = Outputable.showSDoc
-#endif
 #if __GLASGOW_HASKELL__ == 704
 showSDoc _ = Outputable.showSDoc
 #endif
@@ -219,9 +192,6 @@ showSDoc = Outputable.showSDoc
 #endif
 
 -- | An instance of a class.
-#if __GLASGOW_HASKELL__ == 702
-type SomeInstance = Instance
-#endif
 #if __GLASGOW_HASKELL__ == 704
 type SomeInstance = Instance
 #endif
@@ -249,13 +219,6 @@ getInfo = fmap (fmap (\(a,b,c,d) -> (a,b,c))) . GHC.getInfo False
 
 -- Missing instances
 
-#if __GLASGOW_HASKELL__ == 702
-instance Show SrcSpan where show _ = "SrcSpan"
-#endif
-
-#if __GLASGOW_HASKELL__ == 702
-instance Trans.MonadIO Ghc where liftIO = GhcMonad.liftIO
-#endif
 #if __GLASGOW_HASKELL__ == 704
 instance Trans.MonadIO Ghc where liftIO = GhcMonad.liftIO
 #endif

@@ -2,7 +2,9 @@
 
 -- | Main socket server.
 
-module GHC.Server where
+module GHC.Server
+  (startAccepter)
+  where
 
 import GHC.Server.Client
 import GHC.Server.Commands

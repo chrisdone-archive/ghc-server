@@ -5,7 +5,7 @@ A server interface to GHC. Work in progress. No official release yet.
 
 ### Purpose
 
-Generally it should replace use of GHC, GHCi, hlint, hdevtools, ghc-mod in one big 
+Generally it should replace use of GHC, GHCi, hlint, hdevtools, ghc-mod in one big
 program that you can communicate with via a simple s-expression/JSON-based protocol.
 
 ### Supported
@@ -51,18 +51,17 @@ program that you can communicate with via a simple s-expression/JSON-based proto
 I test compilation against the following GHC versions.
 
 * GHC 7.8
-* GHC 7.6 
-* GHC 7.4 
-* GHC 7.2
+* GHC 7.6
+* GHC 7.4
 
-This is achieved via a [wrapper module](https://github.com/chrisdone/ghc-server/blob/master/src/GHC/Compat.hs) 
+This is achieved via a [wrapper module](https://github.com/chrisdone/ghc-server/blob/master/src/GHC/Compat.hs)
 called `GHC.Compat` which wraps any function or type that
 has changed between GHC versions.
 
 ### What about GHCi, Scion, hdevtools, ghc-mod, FP Haskell Center, etc.?
 
 There are many approaches to this problem. Consider this a vanity project
-on par with Frank Sinatra's _I did it My Way…_. As an Emacs user I'm 
+on par with Frank Sinatra's _I did it My Way…_. As an Emacs user I'm
 very particular about my development environment. I change it from day to day
 as I please, sometimes with bad ideas, sometimes with good ideas. Here
 I have the freedom to make the Haskell setup that I want. I will treat

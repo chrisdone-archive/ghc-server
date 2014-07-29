@@ -3,8 +3,8 @@
 module GHC.Server.IO (runIO) where
 
 import           Control.Applicative
-import           Control.Concurrent.Async
 import           Control.Concurrent
+import           Control.Concurrent.Async
 import           Control.Exception
 import           Control.Monad
 import           Data.ByteString (ByteString)
