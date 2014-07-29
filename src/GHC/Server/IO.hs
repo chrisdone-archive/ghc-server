@@ -2,17 +2,20 @@
 
 module GHC.Server.IO (runIO) where
 
+import           Control.Applicative
+import           Control.Concurrent.Async
 import           Control.Concurrent
 import           Control.Exception
 import           Control.Monad
-import           Control.Monad.Fix
 import           Data.ByteString (ByteString)
-import qualified Data.ByteString as S
+import           Data.Conduit
+import           Data.Conduit.Binary
+import qualified Data.Conduit.List as C
 import           System.IO
 import           System.Posix.IO
 
 -- | Run the given IO action, capturing its stdout output and passing
--- it to the continuation in <=1KB chunks.
+-- it to the continuation.
 runIO :: IO b                  -- ^ Action to run.
       -> (ByteString -> IO ()) -- ^ Continuation to accept stdout.
       -> IO b
@@ -21,37 +24,10 @@ runIO m cont =
      origStdout <- dup stdOutput
      (r,w) <- createPipe
      _ <- dupTo w stdOutput
-     hSetBuffering stdout NoBuffering
+     closeFd w
      h <- fdToHandle r
-     -- Start consumer.
-     doneVar <- newMVar False
-     finishedConsuming <- newEmptyMVar
-     void
-       (forkIO
-          (do void
-                (try
-                   (fix
-                      (\loop ->
-                         do some <- S.hGetNonBlocking h 1024
-                            if S.null some
-                               then do done <- readMVar doneVar
-                                       if done
-                                          then hClose h
-                                          else do threadDelay (1000 * 100)
-                                                  loop
-                               else do cont some
-                                       loop))
-                 :: IO (Either IOException ()))
-              putMVar finishedConsuming ()))
-     -- Start user action.
-     v <- m
-     -- End.
-     -- Tell the consumer that writing has finished.
-     swapMVar doneVar True
-     -- Wait until consumer has finished consuming.
-     takeMVar finishedConsuming
-     -- Restore stdout.
-     wh <- fdToHandle w
-     hClose wh
-     dupTo origStdout stdOutput
-     return v
+     hSetBuffering stdout NoBuffering
+     runConcurrently
+        $ Concurrently (sourceHandle h $$ C.mapM_ cont)
+       *> Concurrently (m `finally` hFlush stdout
+                          `finally` dupTo origStdout stdOutput)

@@ -40,7 +40,10 @@ library
     syb >= 0.4,
     foreign-store,
     bifunctors,
-    unix
+    unix,
+    async,
+    conduit,
+    conduit-extra
 
 executable ghc-server
   main-is:           Main.hs
