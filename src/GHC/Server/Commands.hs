@@ -45,14 +45,14 @@ clientCall runGhc cmd results =
                                   (mapM getInfo names)
                     io (endResult results (InfoResult (unlines infos))))
       Set flag ->
-        withGhc (do setFlag flag
-                    io (endResult results Unit))
+        runGhc (do setFlag flag
+                   io (endResult results Unit))
       PackageConf pkgconf ->
-        withGhc (do setFlag ("-package-conf=" ++ pkgconf)
-                    df <- getSessionDynFlags
-                    (dflags,_pkgs) <- io (initPackages df)
-                    setSessionDynFlags dflags
-                    io (endResult results Unit))
+        runGhc (do setFlag ("-package-conf=" ++ pkgconf)
+                   df <- getSessionDynFlags
+                   (dflags,_pkgs) <- io (initPackages df)
+                   setSessionDynFlags dflags
+                   io (endResult results Unit))
   where loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"
         withGhc = runGhc . addLogsToResults results
