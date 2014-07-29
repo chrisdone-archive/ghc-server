@@ -119,7 +119,7 @@
 (defun ghc-cmd-info (string)
   "Get the info of the given thing."
   (ghc-con-send (ghc-con)
-                (make-ghc-conn
+                (make-ghc-con
                  :state nil
                  :cmd `(info ,string)
                  :complete 'ghc-cmd-info-complete

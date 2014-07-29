@@ -19,6 +19,7 @@
 
 (require 'ghc-con)
 (require 'ghc-cmd)
+(require 'haskell-mode)
 
 (defun ghc/connect ()
   "Connect if not connected."
@@ -50,7 +51,8 @@
 
 (defun ghc/info (string)
   "Get the info of the given thing."
-  (interactive (list (read-from-minibuffer "Info of: ")))
+  (interactive (list (or (haskell-ident-at-point)
+                         (read-from-minibuffer "Info of: "))))
   (ghc-cmd-info string))
 
 (defun ghc/kind (string)
@@ -60,7 +62,8 @@
 
 (defun ghc/type (string)
   "Get the type of the given type expression."
-  (interactive (list (read-from-minibuffer "Type of: ")))
+  (interactive (list (or (haskell-ident-at-point)
+                         (read-from-minibuffer "Type of: "))))
   (ghc-cmd-type string))
 
 (provide 'ghc)
