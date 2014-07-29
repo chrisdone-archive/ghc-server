@@ -33,6 +33,7 @@
 (defun ghc/load ()
   "Load the current module."
   (interactive)
+  (save-buffer)
   (if (eq major-mode 'haskell-mode)
       (ghc-cmd-load (buffer-file-name))
     (ghc-cmd-load (read-from-minibuffer "Load: "))))
