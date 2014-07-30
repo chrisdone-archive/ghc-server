@@ -49,7 +49,7 @@
                 "\\\\n"
                 (format "%S" `(request ,rid
                                        ,(ghc-con-cmd request))))))
-      (ghc-log "-> %s" msg)
+      (ghc-log "%s" msg)
       (process-send-string
        p
        (concat msg "\n")))))
@@ -89,7 +89,7 @@
         (filter (ghc-con-filter request))
         (complete (ghc-con-complete request))
         (error (ghc-con-error request)))
-    (ghc-log "<- %S"
+    (ghc-log "%S"
              (list (car payload)
                    rid
                    (cadr payload)))
@@ -103,7 +103,7 @@
        (remhash rid ghc-con-requests)
        (if complete
            (apply complete (list request (cadr payload)))
-         (message "End results are not supported byp this command %S: %S"
+         (message "End results are not supported by this command %S: %S"
                   cmd payload)))
       (error-result
        (remhash rid ghc-con-requests)
