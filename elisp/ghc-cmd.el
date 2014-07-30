@@ -59,8 +59,12 @@
 (defun ghc-cmd-load-target-filter (request result)
   (ecase (car result)
     (log-result
-     (message "%s: %s"
+     (message "%s:%d:%d-%d:%d:\n%s"
               (elt (nth 2 result) 0)
+              (elt (nth 2 result) 1)
+              (elt (nth 2 result) 3)
+              (elt (nth 2 result) 2)
+              (elt (nth 2 result) 4)
               (nth 3 result)))))
 
 (defun ghc-cmd-load-target-complete (request result)
