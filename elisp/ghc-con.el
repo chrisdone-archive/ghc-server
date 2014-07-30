@@ -17,15 +17,12 @@
 
 ;;; Code:
 
+(require 'ghc-log)
 (require 'cl)
 
 (defstruct ghc-con
   "A request handler."
   state cmd filter complete error)
-
-(defvar ghc-con-log-p
-  nil
-  "Log requests/replies?")
 
 (defvar ghc-con
   nil
@@ -52,8 +49,7 @@
                 "\\\\n"
                 (format "%S" `(request ,rid
                                        ,(ghc-con-cmd request))))))
-      (when ghc-con-log-p
-        (message "-> %s" msg))
+      (ghc-log "-> %s" msg)
       (process-send-string
        p
        (concat msg "\n")))))
@@ -93,11 +89,10 @@
         (filter (ghc-con-filter request))
         (complete (ghc-con-complete request))
         (error (ghc-con-error request)))
-    (when ghc-con-log-p
-      (message "<- %S"
-               (list (car payload)
-                     rid
-                     (cadr payload))))
+    (ghc-log "<- %S"
+             (list (car payload)
+                   rid
+                   (cadr payload)))
     (case (car payload)
       (result
        (if filter

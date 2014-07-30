@@ -3,6 +3,7 @@ ELFILES = ghc-cmd.el \
 	  ghc-repl.el \
 	  ghc-mode.el \
 	  ghc-ident.el \
+	  ghc-log.el \
 	  ghc.el
 
 ELCFILES = $(ELFILES:.el=.elc)
