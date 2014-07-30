@@ -17,6 +17,8 @@
 
 ;;; Code:
 
+(require 'ghc-con)
+
 (defun ghc-cmd-ping ()
   "Send a ping command and print delay in milliseconds."
   (ghc-con-send

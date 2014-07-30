@@ -17,6 +17,8 @@
 
 ;;; Code:
 
+(require 'cl)
+
 (defstruct ghc-con
   "A request handler."
   state cmd filter complete error)
