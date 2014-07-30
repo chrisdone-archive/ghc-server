@@ -1,17 +1,40 @@
-* DONE Init packages support for HSENV
-  CLOSED: [2014-07-25 Fri 12:42]
-** DONE Parse the PACKAGE_DB_FOR_GHC env var
-   CLOSED: [2014-07-25 Fri 12:42]
-   CLOCK: [2014-07-25 Fri 12:33]--[2014-07-25 Fri 12:42] =>  0:09
-* DONE Run statements
-  CLOSED: [2014-07-25 Fri 17:47]
-** DONE Use exprType to _always_ get the type of the expression
-   CLOSED: [2014-07-25 Fri 17:47]
-If the following approach fails, we always have the type to display.
-** DONE Try to cast it to IO String
-   CLOSED: [2014-07-25 Fri 17:47]
-Use (>>= return . show) to get such a type.
-* DONE Capture stdout
-  CLOSED: [2014-07-26 Sat 16:29]
-  CLOCK: [2014-07-25 Fri 21:28]--[2014-07-26 Sat 16:29] => 19:01
-  CLOCK: [2014-07-25 Fri 18:00]--[2014-07-25 Fri 18:32] =>  0:32
+* Must be done
+** TODO [#A] Sessions
+** TODO [#A] Function to auto-start a ghc-server on random port
+** TODO [#A] Basic REPL
+*** TODO [#A] Make sure multi-line input works
+** TODO [#A] Cabal commands
+*** TODO [#A] Cabal build
+*** TODO [#A] Misc commands
+** TODO [#A] Type of sub-expressions
+See here: https://gist.github.com/chrisdone/1ac360460f99442f9efe
+*** TODO [#A] Compare hdevtools and ghc-mod's implementations
+** TODO [#A] Go to definition
+*** TODO [#A] Use GHC's info
+*** TODO [#A] Also support local scope
+*** TODO [#A] Use fast-tags for fallback
+** TODO [#A] Auto-completion
+*** TODO [#A] Auto-completion in editor
+*** TODO [#A] Also auto-completion in REPL
+** TODO [#A] Display documentation (use haskell-docs)
+** TODO [#A] Read Cabal file to figure out GHC options and paths
+** TODO [#A] Fix compile warnings
+** TODO [#A] Test suite
+* Would be nice
+** TODO [#A] Add ghc/compile-file
+** TODO [#B] Automatic import management.
+** TODO [#B] Show generated Core for a module / function.
+** TODO [#B] Show generated CMM for a module / function.
+** TODO [#B] Show generated assembly for a module / function.
+** TODO [#B] Expose structured-haskell-mode parser
+** TODO [#B] Haskell-names-based scope resolution
+** TODO [#B] Hoogle generation for top-level names
+** TODO [#B] Hoogle generation for every expression in codebase
+* Maybe
+** TODO [#C] Make better debugging available.
+** TODO [#C] Watch statements/variables.
+** TODO [#C] Programmatic access to scope, type info, instances, etc.
+** TODO [#C] Support presentations of some kind
+** TODO [#C] Managed handling of Cabal configuration.
+** TODO [#C] Hlint checking
+** TODO [#C] Additional JSON-based communication layer
