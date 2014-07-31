@@ -18,7 +18,6 @@ library
                      GHC.Server.IO,
                      GHC.Compat
   other-modules:     GHC.Server.Commands
-                     GHC.Server.Server
                      GHC.Server.Client
                      GHC.Server.Slave
                      GHC.Server.Log
