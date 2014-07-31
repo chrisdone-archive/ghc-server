@@ -114,7 +114,7 @@
       (t
        (message "Bogus result type: %S" payload)))))
 
-(defun ghc-con-create (name)
+(defun ghc-con-create (name prompt)
   "Get or create a connection."
   (let* ((name (format "*ghc-server:%s*" name))
          (process (get-process name)))
@@ -125,18 +125,31 @@
           (delete-process process))
         (make-network-process
          :name name
-         :host (read-from-minibuffer "Host: " "localhost")
-         :service (string-to-number
-                   (read-from-minibuffer "Port: " "5233"))
+         :host (if prompt
+                   (read-from-minibuffer "Host: " "localhost")
+                 "localhost")
+         :service (if prompt
+                      (string-to-number
+                       (read-from-minibuffer "Port: " "5233"))
+                    5233
+                    ;; TODO: Use (ghc-con-start-server)
+                    )
          :nowait t
          :sentinel 'ghc-con-process-sentinel
          :filter 'ghc-con-process-filter)))))
 
-(defun ghc-con-make ()
+(defun ghc-con-start-server (name)
+  "Start a locally running server with NAME as an argument (which
+  is helpful when looking at top)."
+  (let ((default-directory (ghc-session-dir (ghc-session))))
+    ;; TODO:
+    ))
+
+(defun ghc-con-make (&optional prompt)
   "Make a connection and locally assign it."
   (let ((session (ghc-session)))
     (let* ((name (ghc-session-name session))
-           (con (ghc-con-create name)))
+           (con (ghc-con-create name prompt)))
       (setf (ghc-session-con session) con)
       con)))
 

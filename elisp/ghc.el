@@ -22,10 +22,10 @@
 (require 'ghc-mode)
 (require 'ghc-ident)
 
-(defun ghc/connect ()
+(defun ghc/connect (prompt)
   "Connect if not connected."
-  (interactive)
-  (ghc-con-make))
+  (interactive "P")
+  (ghc-con-make prompt))
 
 (defun ghc/disconnect ()
   "Disconnect."
