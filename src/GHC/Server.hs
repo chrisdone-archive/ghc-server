@@ -20,8 +20,8 @@ import System.IO
 -- | Start a server.
 startAccepter :: IO ()
 startAccepter =
-  do (p:_) <- getArgs
-     let port = fromIntegral (fromMaybe 5233 (readMay p))
+  do ps <- getArgs
+     let port = fromInteger (fromMaybe 5233 (readMay =<< listToMaybe ps))
      main <- myThreadId
      server <- newServer main
      socket <- listenOn (PortNumber port)
