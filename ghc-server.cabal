@@ -48,7 +48,8 @@ library
       unix,
       async,
       conduit,
-      conduit-extra
+      conduit-extra,
+      safe
 
 executable ghc-server
   main-is:           Main.hs

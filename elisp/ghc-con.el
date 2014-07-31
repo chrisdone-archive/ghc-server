@@ -125,10 +125,9 @@
           (delete-process process))
         (make-network-process
          :name name
-         :host (or "localhost" (read-from-minibuffer "Host: " "localhost"))
-         :service (or 5233
-                      (string-to-number
-                       (read-from-minibuffer "Port: " "5233")))
+         :host (read-from-minibuffer "Host: " "localhost")
+         :service (string-to-number
+                   (read-from-minibuffer "Port: " "5233"))
          :nowait t
          :sentinel 'ghc-con-process-sentinel
          :filter 'ghc-con-process-filter)))))

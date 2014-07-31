@@ -12,12 +12,17 @@ import GHC.Server.Import
 import GHC.Server.Slave
 
 import Data.IORef
+import Data.Maybe
+import Safe
+import System.Environment
 import System.IO
 
 -- | Start a server.
 startAccepter :: IO ()
 startAccepter =
-  do main <- myThreadId
+  do (p:_) <- getArgs
+     let port = fromIntegral (fromMaybe 5233 (readMay p))
+     main <- myThreadId
      server <- newServer main
      socket <- listenOn (PortNumber port)
      logger (Notice ("Listening on port " ++ show port ++ " ..."))
@@ -36,7 +41,6 @@ startAccepter =
                        cons
                  sClose socket
                  logger (Debug ("Closed listener on port " ++ show port)))
-  where port = 5233
 
 -- | Make a new server that will receive commands concurrently and
 -- respond, asynchronously, concurrently.
