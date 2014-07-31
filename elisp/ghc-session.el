@@ -47,11 +47,12 @@
   (ghc-let-when
    (file (ghc-session-find-cabal-file))
    (let ((dir (file-name-directory file)))
-     (car (remove-if-not
-           (lambda (s)
-             (string= (ghc-session-dir s)
-                      dir))
-           ghc-session-list)))))
+     (set (make-local-variable 'ghc-session)
+          (car (remove-if-not
+                (lambda (s)
+                  (string= (ghc-session-dir s)
+                           dir))
+                ghc-session-list))))))
 
 (defun ghc-session-set ()
   "Set the current session."
