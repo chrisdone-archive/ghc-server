@@ -26,12 +26,12 @@ startAccepter =
      server <- newServer main
      socket <- listenOn (PortNumber port)
      logger (Notice ("Listening on port " ++ show port ++ " ..."))
-     connections <- newIORef []
+     connections <- newMVar []
      finally (forever (do (h,host,remotePort) <- accept socket
                           forkIO (do tid <- myThreadId
-                                     modifyIORef connections ((tid,h) :)
+                                     modifyMVar_ connections (return . ((tid,h) :))
                                      startClient h host remotePort server)))
-             (do cons <- readIORef connections
+             (do cons <- takeMVar connections
                  logger (Fatal "Server killed!")
                  mapM_ (\(tid,h) ->
                           do logger (Debug ("Killing " ++ show tid ++ " ..."))
