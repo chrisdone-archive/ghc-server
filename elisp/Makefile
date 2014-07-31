@@ -1,4 +1,6 @@
-ELFILES = ghc-cmd.el \
+ELFILES = ghc-macros.el \
+	  ghc-cmd.el \
+          ghc-session.el \
 	  ghc-con.el \
 	  ghc-repl.el \
 	  ghc-mode.el \

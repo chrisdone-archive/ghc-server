@@ -19,12 +19,18 @@
 
 (require 'ghc-con)
 (require 'ghc-cmd)
+(require 'ghc-mode)
 (require 'ghc-ident)
 
 (defun ghc/connect ()
   "Connect if not connected."
   (interactive)
   (ghc-con-make))
+
+(defun ghc/disconnect ()
+  "Disconnect."
+  (interactive)
+  (ghc-con-disconnect))
 
 (defun ghc/ping ()
   "Ping to check if connection's working."

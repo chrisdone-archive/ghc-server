@@ -18,15 +18,13 @@
 ;;; Code:
 
 (require 'ghc-log)
+(require 'ghc-session)
+(require 'ghc-macros)
 (require 'cl)
 
 (defstruct ghc-con
   "A request handler."
   state cmd filter complete error)
-
-(defvar ghc-con
-  nil
-  "Current buffer-local connection.")
 
 (defvar ghc-con-number
   0
@@ -57,12 +55,14 @@
 (defun ghc-con-process-sentinel (p sig)
   "Handles connection events."
   (cond ((string= sig "open\n")
-         (message "Connected to GHC server."))
+         (message "Connected to GHC server!"))
         ((string-match "^failed " sig)
          (message "Failed to connect to GHC server."))
         ((string= sig "deleted\n")
-         (message "Connection to GHC server deleted."))
-        (t (message "%S" sig))))
+         (message "Disconnected from GHC server!"))
+        (t
+         (message "Connection error: %s"
+                  (replace-regexp-in-string "\n" " " sig)))))
 
 (defun ghc-con-process-filter (p data)
   "Handles incoming data."
@@ -116,7 +116,7 @@
 
 (defun ghc-con-create (name)
   "Get or create a connection."
-  (let* ((name (format "*ghc-%s*" name))
+  (let* ((name (format "*ghc-server:%s*" name))
          (process (get-process name)))
     (if (and process (process-live-p process))
         process
@@ -134,18 +134,24 @@
 
 (defun ghc-con-make ()
   "Make a connection and locally assign it."
-  (let* ((name "test") ;; TODO: Figure this out.
-         (con (ghc-con-create name)))
-    (set (make-local-variable 'ghc-con)
-         name)
-    con))
+  (let ((session (ghc-session)))
+    (let* ((name (ghc-session-name session))
+           (con (ghc-con-create name)))
+      (setf (ghc-session-con session) con)
+      con)))
 
 (defun ghc-con ()
   "Get the current GHC connection."
-  (if (bound-and-true-p ghc-con)
-      (if (stringp ghc-con)
-          (ghc-con-create ghc-con)
-        (ghc-con-make))
-    (ghc-con-make)))
+  (ghc-let-if (session (ghc-session-get))
+              (let ((proc (ghc-session-con session)))
+                (if (and proc (process-live-p proc))
+                    proc
+                  (error "Not connected to a server. Run M-x ghc/connect to connect.")))
+              (ghc-con-make)))
+
+(defun ghc-con-disconnect ()
+  "Disconnect from the server."
+  (ghc-let-when (session (ghc-session-get))
+                (delete-process (ghc-session-con session))))
 
 (provide 'ghc-con)
