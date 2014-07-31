@@ -21,6 +21,7 @@ program that you can communicate with via a simple s-expression/JSON-based proto
 * Setting compile flags.
 * Setting package-conf flag.
 * Capture stdout separately to evaluation.
+* Sessions.
 
 See TODO.org for planned features.
 
