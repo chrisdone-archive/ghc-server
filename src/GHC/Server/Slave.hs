@@ -47,7 +47,9 @@ makeUserFlags =
   do env <- liftIO getEnvironment
      case lookup "HSENV" env >> lookup "PACKAGE_DB_FOR_GHC" env of
        Just flags -> return (words flags)
-       Nothing -> return []
+       Nothing -> case lookup "GHC_PACKAGE_PATH" env of
+           Just path -> return ["-no-user-pg-db", "-pkg-db=" ++ path]
+           Nothing -> return []
 
 -- | Run a GHC slave. This will receive commands and execute them
 -- sequentially in a single thread.
