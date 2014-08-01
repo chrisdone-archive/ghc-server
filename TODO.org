@@ -1,4 +1,8 @@
 * Must be done
+** TODO [#A] Get -fobject-code working
+May involve setting itself as a CompileManager or whatever it was.
+** TODO [#A] Possibly read in .ghci files?
+** TODO [#A] Get compile progress reports
 ** TODO [#A] Function to auto-start a ghc-server on random port
    CLOCK: [2014-07-31 Thu 20:10]--[2014-07-31 Thu 20:27] =>  0:17
 ** TODO [#A] Basic REPL
