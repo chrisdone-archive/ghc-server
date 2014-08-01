@@ -38,6 +38,11 @@
   (interactive)
   (ghc-cmd-ping))
 
+(defun ghc/cd (dir)
+  "Change ghc working directory."
+  (interactive "D")
+  (ghc-cmd-cd (expand-file-name dir)))
+
 (defun ghc/load ()
   "Load the current module."
   (interactive)

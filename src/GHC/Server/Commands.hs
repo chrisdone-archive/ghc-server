@@ -11,6 +11,7 @@ import Data.Dynamic
 import Data.List
 import Data.Maybe
 import GHC.Compat
+import System.Posix.Directory
 
 -- | Call a command, return a result.
 clientCall :: (Ghc () -> IO ()) -> Cmd -> Chan ResultType -> IO ()
@@ -52,6 +53,12 @@ clientCall runGhc cmd results =
                    df <- getSessionDynFlags
                    (dflags,_pkgs) <- io (initPackages df)
                    setSessionDynFlags dflags
+                   io (endResult results Unit))
+      CWD dir ->
+        runGhc (do io (changeWorkingDirectory dir)
+                   workingDirectoryChanged
+                   setTargets []
+                   load LoadAllTargets
                    io (endResult results Unit))
   where loadedImports = map (\m -> "import " ++ moduleNameString m)
         unlines = intercalate "\n"

@@ -38,6 +38,7 @@ data Cmd
   | InfoOf String
   | Set String
   | PackageConf FilePath
+  | CWD String
     deriving Show
 
 -- | Custom decoding from s-expression.
@@ -60,6 +61,7 @@ instance L.FromLisp Cmd where
   parseLisp (L.List (L.Symbol "load-target":L.String t:_)) = return (LoadTarget (T.unpack t))
   parseLisp (L.List (L.Symbol "set":L.String opt:_)) = return (Set (T.unpack opt))
   parseLisp (L.List (L.Symbol "package-conf":L.String pkgconf:_)) = return (PackageConf (T.unpack pkgconf))
+  parseLisp (L.List (L.Symbol "cd":L.String dir:_)) = return (CWD (T.unpack dir))
   parseLisp l = L.typeMismatch "Cmd" l
 
 -- | A command result.

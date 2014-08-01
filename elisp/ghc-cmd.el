@@ -48,6 +48,20 @@
   "Handler for setting options."
   (message "Option set."))
 
+
+(defun ghc-cmd-cd (dir)
+  "Set some GHC option."
+  (ghc-con-send
+   (ghc-con)
+   (make-ghc-con
+    :cmd `(cd ,dir)
+    :complete 'ghc-cmd-cd-ok)))
+
+(defun ghc-cmd-cd-ok (request _)
+  "Handler for setting options."
+  (message "Changed directory."))
+
+
 (defun ghc-cmd-load (target)
   "Load a target (file or module)."
   (let ((session (ghc-session)))
