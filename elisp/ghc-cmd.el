@@ -24,7 +24,7 @@
   "Send a ping command and print delay in milliseconds."
   (ghc-con-send
    (ghc-con)
-   (make-ghc-con
+   (make-ghc-req
     :state nil
     :cmd `(ping ,(round (* 1000 (float-time))))
     :complete 'ghc-cmd-pong-complete)))
@@ -40,7 +40,7 @@
   "Set some GHC option."
   (ghc-con-send
    (ghc-con)
-   (make-ghc-con
+   (make-ghc-req
     :cmd `(set ,opt)
     :complete 'ghc-cmd-set-ok)))
 
@@ -56,7 +56,7 @@
         (ghc-msgs-clear)))
     (ghc-con-send
      (ghc-con)
-     (make-ghc-con
+     (make-ghc-req
       :state (ghc-session)
       :cmd `(load-target ,target)
       :filter 'ghc-cmd-load-target-filter
@@ -64,7 +64,7 @@
       :error 'ghc-cmd-load-target-error))))
 
 (defun ghc-cmd-load-target-filter (request result)
-  (let ((session (ghc-con-state request)))
+  (let ((session (ghc-req-state request)))
     (ecase (car result)
       (log-result
        (with-current-buffer (ghc-msgs-buffer (ghc-session-name session))
@@ -92,7 +92,7 @@
   "Evaluate an expression and show the result in the REPL."
   (ghc-con-send
    (ghc-con)
-   (make-ghc-con
+   (make-ghc-req
     :state (current-buffer)
     :cmd `(eval ,string)
     :complete 'ghc-cmd-eval-complete
@@ -134,7 +134,7 @@
 (defun ghc-cmd-info (string)
   "Get the info of the given thing."
   (ghc-con-send (ghc-con)
-                (make-ghc-con
+                (make-ghc-req
                  :state nil
                  :cmd `(info ,string)
                  :complete 'ghc-cmd-info-complete
@@ -149,7 +149,7 @@
 (defun ghc-cmd-type (string)
   "Get the type of the given expression."
   (ghc-con-send (ghc-con)
-                (make-ghc-con
+                (make-ghc-req
                  :state nil
                  :cmd `(type ,string)
                  :complete 'ghc-cmd-type-complete
@@ -165,7 +165,7 @@
   "Get the kind of the given type expression."
   (interactive (list (read-from-minibuffer "Kind of: ")))
   (ghc-con-send (ghc-con)
-                (make-ghc-con
+                (make-ghc-req
                  :state nil
                  :cmd `(kind ,string)
                  :complete 'ghc-cmd-kind-complete

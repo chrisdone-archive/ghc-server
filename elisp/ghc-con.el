@@ -22,7 +22,7 @@
 (require 'ghc-macros)
 (require 'cl)
 
-(defstruct ghc-con
+(defstruct ghc-req
   "A request handler."
   state cmd filter complete error session)
 
@@ -41,13 +41,13 @@
 (defun ghc-con-send (p request)
   "Send a command request and handle the results."
   (let ((rid (setq ghc-con-number (1+ ghc-con-number))))
-    (setf (ghc-con-session request) (ghc-session))
+    (setf (ghc-req-session request) (ghc-session))
     (puthash rid request ghc-con-requests)
     (let ((msg (replace-regexp-in-string
                 "\n"
                 "\\\\n"
                 (format "%S" `(request ,rid
-                                       ,(ghc-con-cmd request))))))
+                                       ,(ghc-req-cmd request))))))
       (ghc-log "%s" msg)
       (process-send-string
        p
@@ -89,11 +89,11 @@
 
 (defun ghc-con-payload (rid request payload)
   "Handle the final payload, calling appropriate handlers."
-  (let* ((cmd (ghc-con-cmd request))
-         (filter (ghc-con-filter request))
-         (complete (ghc-con-complete request))
-         (error (ghc-con-error request))
-         (session (ghc-con-session request))
+  (let* ((cmd (ghc-req-cmd request))
+         (filter (ghc-req-filter request))
+         (complete (ghc-req-complete request))
+         (error (ghc-req-error request))
+         (session (ghc-req-session request))
          (default-directory (ghc-session-dir session)))
     (ghc-log "%S"
              (list (car payload)
