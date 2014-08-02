@@ -11,7 +11,6 @@ import GHC.Server.Commands
 import GHC.Server.Import
 import GHC.Server.Slave
 
-import Data.IORef
 import Data.Maybe
 import Safe
 import System.Environment

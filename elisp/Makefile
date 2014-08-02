@@ -7,6 +7,7 @@ ELFILES = ghc-macros.el \
 	  ghc-log.el \
 	  ghc-msgs.el \
 	  ghc-cmd.el \
+          ghc-repl.el \
 	  ghc.el
 
 ELCFILES = $(ELFILES:.el=.elc)

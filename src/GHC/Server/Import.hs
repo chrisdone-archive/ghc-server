@@ -27,4 +27,4 @@ io = Trans.liftIO
 necessaryImports :: [String]
 necessaryImports =
   ["import Prelude"
-  {-"import GHC.Server.IO"-}]
+  ,"import GHC.Server.IO"]

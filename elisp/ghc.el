@@ -20,6 +20,7 @@
 (require 'ghc-con)
 (require 'ghc-cmd)
 (require 'ghc-mode)
+(require 'ghc-repl)
 (require 'ghc-ident)
 
 (defun ghc/connect (prompt)
@@ -71,5 +72,17 @@
   (interactive (list (or (ghc-ident-at-point)
                          (read-from-minibuffer "Type of: "))))
   (ghc-cmd-type string))
+
+(defun ghc/msgs ()
+  "Create/show the messages buffer."
+  (interactive)
+  (let ((default-directory (ghc-session-dir (ghc-session))))
+    (switch-to-buffer (ghc-msgs-buffer (ghc-session-name (ghc-session))))))
+
+(defun ghc/repl ()
+  "Create/show the REPL buffer."
+  (interactive)
+  (let ((default-directory (ghc-session-dir (ghc-session))))
+    (switch-to-buffer (ghc-repl-buffer (ghc-session-name (ghc-session))))))
 
 (provide 'ghc)

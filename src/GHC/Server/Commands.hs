@@ -84,26 +84,26 @@ tryImportOrDecls results expr =
                      Right names ->
                        io (endResult results (DeclResult (map (sdoc dflags) names)))
                      Left (err :: SomeException) ->
-                       tryEvaluating results expr
+                       tryEvaluating "" results expr
               Right ty ->
                 do io (addResult results (TypeResult (sdoc dflags ty)))
                    logger (Debug ("Got type: " ++ sdoc dflags ty))
-                   tryEvaluating results expr
+                   tryEvaluating (sdoc dflags ty) results expr
 
 -- | Try evaluating it as an expression.
 --
 -- 23 * 53
 --
 -- Otherwise try running it as an IO action.
-tryEvaluating :: Chan ResultType -> String -> Ghc ()
-tryEvaluating results expr =
+tryEvaluating :: String -> Chan ResultType -> String -> Ghc ()
+tryEvaluating typ results expr =
   do dyn <- tryDynCompileExpr (exprPure expr)
      case fmap fromDynamic dyn of
        Right (Just str) ->
          do logger (Debug ("Running showable expression value..."))
             io (endResult results (EvalResult str))
        _ ->
-         tryRunning results expr
+         tryRunning typ results expr
 
 -- | Try running it as an IO action.
 --
@@ -111,14 +111,16 @@ tryEvaluating results expr =
 -- putStrLn \"Hello!\"
 --
 -- Otherwise try running it as an interactive statement.
-tryRunning :: Chan ResultType -> String -> Ghc ()
-tryRunning results stmt =
+tryRunning :: String -> Chan ResultType -> String -> Ghc ()
+tryRunning typ results stmt =
   do dyn <- tryDynCompileExpr (exprIOShowable stmt)
      case fmap fromDynamic dyn of
        Right (Just (constrain -> action)) ->
          do logger (Debug ("Running IO action returning Show instance..."))
             result <- liftIO (action handleStdin)
-            io (endResult results (EvalResult result))
+            if typ == "IO ()"
+               then io (endResult results Unit)
+               else io (endResult results (EvalResult result))
        _ ->
          do dyn <- tryDynCompileExpr (exprIOUnknown stmt)
             case fmap fromDynamic dyn of
@@ -126,8 +128,9 @@ tryRunning results stmt =
                 do logger (Debug ("Running IO action returning unshowable value..."))
                    () <- liftIO (action handleStdin)
                    io (endResult results Unit)
-              _ ->
-                runStatement results stmt
+              Left e ->
+                do io (putStrLn ("Error: " ++ show e))
+                   runStatement results stmt
   where constrain action =
           asTypeOf action (runIO (return undefined))
         handleStdin bytes =
@@ -141,7 +144,8 @@ tryRunning results stmt =
 -- Otherwise give up.
 runStatement :: Chan ResultType -> String -> Ghc ()
 runStatement results stmt =
-  do result <- gtry (runStmt stmt RunToCompletion)
+  do io (putStrLn "Running statement ...")
+     result <- gtry (runStmt stmt RunToCompletion)
      dflags <- getSessionDynFlags
      case result of
        Left (SomeException e :: SomeException) ->

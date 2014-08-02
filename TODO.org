@@ -5,8 +5,6 @@ May involve setting itself as a CompileManager or whatever it was.
 ** TODO [#A] Get compile progress reports
 ** TODO [#A] Function to auto-start a ghc-server on random port
    CLOCK: [2014-07-31 Thu 20:10]--[2014-07-31 Thu 20:27] =>  0:17
-** TODO [#A] Basic REPL
-*** TODO [#A] Make sure multi-line input works
 ** TODO [#A] Cabal commands
 *** TODO [#A] Cabal build
 *** TODO [#A] Misc commands
@@ -24,6 +22,11 @@ See here: https://gist.github.com/chrisdone/1ac360460f99442f9efe
 ** TODO [#A] Read Cabal file to figure out GHC options and paths
 ** TODO [#A] Fix compile warnings
 ** TODO [#A] Test suite
+** DONE [#A] Basic REPL
+   CLOSED: [2014-08-02 Sat 20:28]
+*** TODO [#A] Make sure multi-line input works
+** DONE [#A] Messages buffer
+   CLOSED: [2014-08-02 Sat 18:04]
 ** DONE [#A] Sessions
    CLOSED: [2014-07-31 Thu 19:43]
    CLOCK: [2014-07-31 Thu 18:41]--[2014-07-31 Thu 19:43] =>  1:02
