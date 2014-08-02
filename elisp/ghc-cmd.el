@@ -74,7 +74,8 @@
           (elt (nth 2 result) 3)
           (elt (nth 2 result) 2)
           (elt (nth 2 result) 4)
-          (nth 3 result)))))))
+          (nth 3 result)
+          (nth 1 result)))))))
 
 (defun ghc-cmd-load-target-complete (request result)
   (ecase (car result)
