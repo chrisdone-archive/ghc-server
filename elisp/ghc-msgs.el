@@ -109,7 +109,7 @@
                 line-end col-end
                 msg)
         'face (ecase severity
-                (error 'compilation-error-face)
+                (error 'compilation-error)
                 (warning 'compilation-warning-face))
         'span (list file line-start col-start line-end col-end)
         'end-marker end-marker
