@@ -17,6 +17,7 @@
 
 ;;; Code:
 
+(require 'ghc-macros)
 (require 'cl)
 
 (defstruct ghc-session

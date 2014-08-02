@@ -17,6 +17,7 @@
 
 ;;; Code:
 
+(require 'dired)
 (require 'cl)
 
 (define-derived-mode ghc-msgs-mode help-mode "GHC-Messages"

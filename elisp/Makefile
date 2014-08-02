@@ -1,11 +1,12 @@
 ELFILES = ghc-macros.el \
-	  ghc-cmd.el \
           ghc-session.el \
 	  ghc-con.el \
 	  ghc-repl.el \
 	  ghc-mode.el \
 	  ghc-ident.el \
 	  ghc-log.el \
+	  ghc-msgs.el \
+	  ghc-cmd.el \
 	  ghc.el
 
 ELCFILES = $(ELFILES:.el=.elc)

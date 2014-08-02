@@ -141,9 +141,10 @@
 (defun ghc-con-start-server (name)
   "Start a locally running server with NAME as an argument (which
   is helpful when looking at top)."
-  (let ((default-directory (ghc-session-dir (ghc-session))))
-    ;; TODO:
-    ))
+  ;; (let ((default-directory (ghc-session-dir (ghc-session))))
+  ;;   ;; TODO:
+  ;;   )
+  )
 
 (defun ghc-con-make (&optional prompt)
   "Make a connection and locally assign it."
