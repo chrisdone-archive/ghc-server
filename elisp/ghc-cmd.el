@@ -18,6 +18,7 @@
 ;;; Code:
 
 (require 'ghc-con)
+(require 'ghc-msgs)
 
 (defun ghc-cmd-ping ()
   "Send a ping command and print delay in milliseconds."
@@ -49,25 +50,31 @@
 
 (defun ghc-cmd-load (target)
   "Load a target (file or module)."
-  (ghc-con-send
-   (ghc-con)
-   (make-ghc-con
-    :state nil
-    :cmd `(load-target ,target)
-    :filter 'ghc-cmd-load-target-filter
-    :complete 'ghc-cmd-load-target-complete
-    :error 'ghc-cmd-load-target-error)))
+  (let ((session (ghc-session)))
+    (with-current-buffer (ghc-msgs-buffer (ghc-session-name session))
+      (ghc-msgs-clear))
+    (ghc-con-send
+     (ghc-con)
+     (make-ghc-con
+      :state (ghc-session)
+      :cmd `(load-target ,target)
+      :filter 'ghc-cmd-load-target-filter
+      :complete 'ghc-cmd-load-target-complete
+      :error 'ghc-cmd-load-target-error))))
 
 (defun ghc-cmd-load-target-filter (request result)
-  (ecase (car result)
-    (log-result
-     (message "%s:%d:%d-%d:%d:\n%s"
-              (elt (nth 2 result) 0)
-              (elt (nth 2 result) 1)
-              (elt (nth 2 result) 3)
-              (elt (nth 2 result) 2)
-              (elt (nth 2 result) 4)
-              (nth 3 result)))))
+  (let ((session (ghc-con-state request)))
+    (ecase (car result)
+      (log-result
+       (with-current-buffer (ghc-msgs-buffer (ghc-session-name session))
+         (ghc-msgs-insert
+          (ghc-session-dir session)
+          (elt (nth 2 result) 0)
+          (elt (nth 2 result) 1)
+          (elt (nth 2 result) 3)
+          (elt (nth 2 result) 2)
+          (elt (nth 2 result) 4)
+          (nth 3 result)))))))
 
 (defun ghc-cmd-load-target-complete (request result)
   (ecase (car result)
