@@ -20,6 +20,10 @@
 (require 'ghc-macros)
 (require 'cl)
 
+(defvar ghc-session-startup
+  nil
+  "A startup function to run when connected.")
+
 (defstruct ghc-session
   "A ghc-server session."
   name con dir)
