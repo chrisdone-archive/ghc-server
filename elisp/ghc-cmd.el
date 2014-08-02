@@ -51,8 +51,9 @@
 (defun ghc-cmd-load (target)
   "Load a target (file or module)."
   (let ((session (ghc-session)))
-    (with-current-buffer (ghc-msgs-buffer (ghc-session-name session))
-      (ghc-msgs-clear))
+    (let ((default-directory (ghc-session-dir session)))
+      (with-current-buffer (ghc-msgs-buffer (ghc-session-name session))
+        (ghc-msgs-clear)))
     (ghc-con-send
      (ghc-con)
      (make-ghc-con

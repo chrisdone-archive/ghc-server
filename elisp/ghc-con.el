@@ -24,7 +24,7 @@
 
 (defstruct ghc-con
   "A request handler."
-  state cmd filter complete error)
+  state cmd filter complete error session)
 
 (defvar ghc-con-number
   0
@@ -41,6 +41,7 @@
 (defun ghc-con-send (p request)
   "Send a command request and handle the results."
   (let ((rid (setq ghc-con-number (1+ ghc-con-number))))
+    (setf (ghc-con-session request) (ghc-session))
     (puthash rid request ghc-con-requests)
     (let ((msg (replace-regexp-in-string
                 "\n"
@@ -55,7 +56,10 @@
 (defun ghc-con-process-sentinel (p sig)
   "Handles connection events."
   (cond ((string= sig "open\n")
-         (message "Connected to GHC server!"))
+         (message "Connected to GHC server!")
+         (let ((startup ghc-session-startup))
+           (when startup
+             (funcall (eval startup)))))
         ((string-match "^failed " sig)
          (message "Failed to connect to GHC server."))
         ((string= sig "deleted\n")
@@ -85,10 +89,12 @@
 
 (defun ghc-con-payload (rid request payload)
   "Handle the final payload, calling appropriate handlers."
-  (let ((cmd (ghc-con-cmd request))
-        (filter (ghc-con-filter request))
-        (complete (ghc-con-complete request))
-        (error (ghc-con-error request)))
+  (let* ((cmd (ghc-con-cmd request))
+         (filter (ghc-con-filter request))
+         (complete (ghc-con-complete request))
+         (error (ghc-con-error request))
+         (session (ghc-con-session request))
+         (default-directory (ghc-session-dir session)))
     (ghc-log "%S"
              (list (car payload)
                    rid
