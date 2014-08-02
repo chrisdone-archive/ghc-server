@@ -108,7 +108,9 @@
                 line-start col-start
                 line-end col-end
                 msg)
-        'face 'compilation-error
+        'face (ecase severity
+                (error 'compilation-error-face)
+                (warning 'compilation-warning-face))
         'span (list file line-start col-start line-end col-end)
         'end-marker end-marker
         'start-marker start-marker))
