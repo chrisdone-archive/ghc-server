@@ -173,7 +173,7 @@ instance L.FromLisp SomeCommand where
        return (SomeCommand (Ping x))
   parseLisp (L.List (L.Symbol "eval":L.String x:_)) =
     return (SomeCommand (Eval x))
-  parseLisp (L.List (L.Symbol "type":L.String x:_)) =
+  parseLisp (L.List (L.Symbol "type-of":L.String x:_)) =
     return (SomeCommand (TypeOf x))
   parseLisp (L.List (L.Symbol "type-at":L.String fp:L.String string:L.Number (I sl):L.Number (I sc):L.Number (I el):L.Number (I ec):_)) =
     return (SomeCommand
@@ -224,7 +224,7 @@ data Command a where
   LoadTarget    :: Text -> Command (Producer Msg (SuccessFlag,Integer))
   Eval          :: Text -> Command (Duplex Text Text EvalResult)
   Ping          :: Integer -> Command (Returns Integer)
-  TypeOf        :: Text -> Command (Returns Text)
+  TypeOf        :: Text -> Command (Returns [Text])
   LocationAt    :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns SrcSpan)
   TypeAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   Uses          :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)

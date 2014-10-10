@@ -56,8 +56,11 @@ eval :: Text -> Duplex Text Text EvalResult
 eval e = withGhc (tryImportOrDecls e)
 
 -- | Type of identifier.
-typeOf :: Text -> Returns Text
-typeOf = undefined
+typeOf :: Text -> Returns [Text]
+typeOf expr =
+  withGhc (do typ <- exprType (T.unpack expr)
+              df <- getSessionDynFlags
+              return (formatType df typ))
 
 -- | Location of identifier at point.
 locationAt :: FilePath -> Text -> Int -> Int -> Int -> Int -> Returns SrcSpan

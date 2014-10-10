@@ -12,6 +12,7 @@ import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.List
 import           Data.Monoid
+import           Data.Text (Text)
 import qualified Data.Text as T
 import           Linker
 import           System.Environment
@@ -98,3 +99,7 @@ makeUserFlags =
        Nothing -> case lookup "GHC_PACKAGE_PATH" env of
            Just path -> return ["-hide-all-packages", "-pkg-db=" <> path]
            Nothing -> return []
+
+-- | Pretty print a type.
+formatType :: DynFlags -> Type -> [Text]
+formatType dflags = map T.pack . lines . showppr dflags . snd . splitForAllTys
