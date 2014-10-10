@@ -277,6 +277,7 @@ showSeverity t =
     SevInteractive -> "interactive"
 #endif
 
+-- | MonadIO abstraction.
 type MonadIO m = (Trans.MonadIO m,MonadUtils.MonadIO m)
 
 instance Eq InteractiveImport where

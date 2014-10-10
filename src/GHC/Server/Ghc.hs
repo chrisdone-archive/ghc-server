@@ -36,8 +36,12 @@ initializeSlave =
      mapM parseImportDecl necessaryImports >>=
        setContext
      liftIO (initDynLinker dflags''')
-     $(logInfo) ("User flags: " <> T.pack (unwords userFlags))
-     $(logInfo) ("Packages: " <> T.pack (unwords (map (showppr dflags''') packageids)))
+     $(logInfo)
+       ("User flags: " <>
+        T.pack (unwords userFlags))
+     $(logInfo)
+       ("Packages: " <>
+        T.pack (unwords (map (showppr dflags''') packageids)))
   where initFlags =
           ["-fobject-code"
           ,"-dynamic-too"
@@ -68,7 +72,8 @@ withMessages handler m =
      _ <- setSessionDynFlags dflags
      return result
   where addLog st dflags severity' span' _style msg =
-          runReaderT (runDuplexT (handler severity span' msg)) st
+          runReaderT (runDuplexT (handler severity span' msg))
+                     st
           where msgstr = showSDoc dflags msg
                 severity =
                   case severity' of
@@ -80,9 +85,12 @@ withMessages handler m =
 -- | Is the message actually an error?
 isError :: [Char] -> Bool
 isError s =
-  isPrefixOf "No instance for " (trim s) ||
-  isPrefixOf "Couldn't match " (trim s)  ||
-  isPrefixOf "Ambiguous " (trim s)
+  isPrefixOf "No instance for "
+             (trim s) ||
+  isPrefixOf "Couldn't match "
+             (trim s) ||
+  isPrefixOf "Ambiguous "
+             (trim s)
   where trim = unwords . words
 
 -- | Print list of loaded imports.
@@ -91,15 +99,29 @@ loadedImports = map (\m -> "import " <> moduleNameString m)
 
 -- | Make user flags, if HSENV is activated then use the
 -- PACKAGE_DB_FOR_GHC environment variable for package flags.
-makeUserFlags :: LoggingT Ghc [String]
+makeUserFlags :: GhcMonad m => m [String]
 makeUserFlags =
   do env <- liftIO getEnvironment
-     case lookup "HSENV" env >> lookup "PACKAGE_DB_FOR_GHC" env of
+     case lookup "HSENV" env >>
+          lookup "PACKAGE_DB_FOR_GHC" env of
        Just uflags -> return (words uflags)
-       Nothing -> case lookup "GHC_PACKAGE_PATH" env of
-           Just path -> return ["-hide-all-packages", "-pkg-db=" <> path]
+       Nothing ->
+         case lookup "GHC_PACKAGE_PATH" env of
+           Just path ->
+             return ["-hide-all-packages","-pkg-db=" <> path]
            Nothing -> return []
 
 -- | Pretty print a type.
 formatType :: DynFlags -> Type -> Text
-formatType dflags = T.pack . unwords . lines . showppr dflags . snd . splitForAllTys
+formatType dflags = T.pack . unwords . lines . showppr dflags . snd .
+                    splitForAllTys
+
+-- | Apply a flag.
+setFlag :: GhcMonad m => String -> m ()
+setFlag flag =
+  do df <- getSessionDynFlags
+     (dflags,_,_) <- parseDynamicFlags
+                       df
+                       (map (mkGeneralLocated "flag")
+                            [flag])
+     void (setSessionDynFlags dflags)

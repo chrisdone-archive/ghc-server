@@ -4,6 +4,7 @@
 
 module GHC.Server.Commands where
 
+import           Data.Maybe
 import           GHC.Compat
 import           GHC.Server.Duplex
 import           GHC.Server.Eval
@@ -15,6 +16,7 @@ import           Control.Monad
 import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           System.Directory
 
 --------------------------------------------------------------------------------
 -- Commands
@@ -82,17 +84,51 @@ uses :: FilePath -> Text -> Int -> Int -> Int -> Int -> Returns Text
 uses = undefined
 
 -- | Info of the identifier.
-infoOf :: Text -> Returns Text
-infoOf = undefined
+infoOf :: Text -> Returns [Text]
+infoOf ident =
+  withGhc (do names <- parseName (T.unpack ident)
+              df <- getSessionDynFlags
+              infos <- fmap (concatMap (\(t,f,cs) ->
+                                          showppr df t :
+                                          showppr df f :
+                                          map (showppr df) cs) .
+                             catMaybes)
+                            (mapM getInfo names)
+              let spans' =
+                    map ((\x ->
+                            case x of
+                              (RealSrcSpan i) -> printSpan i
+                              _ -> "???") .
+                         getSrcSpan)
+                        names
+                    where printSpan s =
+                            "Defined in " ++
+                            unpackFS (srcSpanFile s)
+              return (map T.pack
+                          (zipWith (\x y ->
+                                      unlines [x,y])
+                                   spans'
+                                   infos)))
 
 -- | Set the options.
 set :: Text -> Unit
-set = undefined
+set flag =
+  withGhc (setFlag (T.unpack flag))
 
 -- | Set the package conf.
 packageConf :: FilePath -> Unit
-packageConf = undefined
+packageConf pkgconf =
+  withGhc (do setFlag ("-package-conf=" <> pkgconf)
+              df <- getSessionDynFlags
+              (dflags,_pkgs) <- io (initPackages df)
+              _ <- setSessionDynFlags dflags
+              return ())
 
 -- | Set the current directory.
-setCurrentDir :: Text -> Unit
-setCurrentDir = undefined
+setCurrentDir :: FilePath -> Unit
+setCurrentDir dir =
+  withGhc (do io (setCurrentDirectory dir)
+              workingDirectoryChanged
+              setTargets []
+              _ <- load LoadAllTargets
+              return ())

@@ -8,5 +8,6 @@ import Control.Monad.Reader
 --------------------------------------------------------------------------------
 -- Logging functions
 
+-- | Run the logging monad.
 runLogging :: MonadIO m => LoggingT m () -> m ()
 runLogging = runStdoutLoggingT

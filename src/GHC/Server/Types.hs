@@ -210,7 +210,7 @@ instance L.FromLisp SomeCommand where
   parseLisp (L.List (L.Symbol "package-conf":L.String pkgconf:_)) =
     return (SomeCommand (PackageConf (T.unpack pkgconf)))
   parseLisp (L.List (L.Symbol "cd":L.String dir:_)) =
-    return (SomeCommand (SetCurrentDir dir))
+    return (SomeCommand (SetCurrentDir (T.unpack dir)))
   parseLisp l = L.typeMismatch "Cmd" l
 
 instance ToLisp SomeException where
@@ -229,10 +229,10 @@ data Command a where
   TypeAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   Uses          :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   KindOf        :: Text -> Command (Returns Text)
-  InfoOf        :: Text -> Command (Returns Text)
+  InfoOf        :: Text -> Command (Returns [Text])
   Set           :: Text -> Command (Returns ())
   PackageConf   :: FilePath -> Command (Returns ())
-  SetCurrentDir :: Text -> Command (Returns ())
+  SetCurrentDir :: FilePath -> Command (Returns ())
 
 deriving instance Show (Command a)
 
