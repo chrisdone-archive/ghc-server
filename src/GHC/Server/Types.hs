@@ -52,9 +52,9 @@ import qualified Data.Text as T
 
 -- | State for the duplex.
 data DuplexState i o =
-  DuplexState {stateIn :: !(Chan i)
-              ,stateOut :: !(Chan o)
-              ,stateGhc :: !(Chan (Ghc ()))}
+  DuplexState {duplexIn :: !(Chan i)
+              ,duplexOut :: !(Chan o)
+              ,duplexRunGhc :: !(Chan (Ghc ()))}
 
 -- | Duplexing full duplex command handling monad.
 newtype DuplexT m i o r =

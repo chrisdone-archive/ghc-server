@@ -18,19 +18,19 @@ import Control.Monad.Reader
 -- | Receive an input.
 recv :: (MonadIO m,Inputish i) => DuplexT m i o i
 recv =
-  do inp <- DuplexT (asks stateIn)
+  do inp <- DuplexT (asks duplexIn)
      io (readChan inp)
 
 -- | Send an output.
 send :: (MonadIO m,Outputish o) => o -> DuplexT m i o ()
 send o =
-  do out <- DuplexT (asks stateOut)
+  do out <- DuplexT (asks duplexOut)
      io (writeChan out o)
 
 -- | Run the GHC action in isolation.
 liftGhc :: Ghc r -> Duplex i o r
 liftGhc m =
-  do ghcChan <- DuplexT (asks stateGhc)
+  do ghcChan <- DuplexT (asks duplexRunGhc)
      io (do result <- newEmptyMVar
             io (writeChan ghcChan
                           (do v <- m
@@ -41,7 +41,7 @@ liftGhc m =
 withGhc :: DuplexT Ghc i o r -> Duplex i o r
 withGhc m =
   do st <- DuplexT ask
-     ghcChan <- DuplexT (asks stateGhc)
+     ghcChan <- DuplexT (asks duplexRunGhc)
      io (do result <- newEmptyMVar
             io (writeChan ghcChan
                           (do v <- runReaderT (runDuplexT m) st
