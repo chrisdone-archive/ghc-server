@@ -24,6 +24,7 @@ library
                      GHC.Server.Types
                      GHC.Server.Ghc
                      GHC.Server.Cabal
+                     GHC.Server.Eval
                      GHC.Compat
   default-language: Haskell2010
   default-extensions: FlexibleInstances, TemplateHaskell

@@ -6,6 +6,7 @@ module GHC.Server.Commands where
 
 import           GHC.Compat
 import           GHC.Server.Duplex
+import           GHC.Server.Eval
 import           GHC.Server.Ghc
 import           GHC.Server.Types
 
@@ -51,11 +52,8 @@ ping :: Integer -> Returns Integer
 ping = return
 
 -- | Eval something for the REPL.
-eval :: Text -> Duplex Text Text (SuccessFlag,Text)
-eval _e =
-  do send "Please enter your name> "
-     line <- recv
-     return (Succeeded,"Your name is " <> line)
+eval :: Text -> Duplex Text Text EvalResult
+eval e = withGhc (tryImportOrDecls e)
 
 -- | Type of identifier.
 typeOf :: Text -> Returns Text

@@ -16,13 +16,13 @@ import Control.Monad.Reader
 -- Duplexing monad
 
 -- | Receive an input.
-recv :: Inputish i => Duplex i o i
+recv :: (MonadIO m,Inputish i) => DuplexT m i o i
 recv =
   do inp <- DuplexT (asks stateIn)
      io (readChan inp)
 
 -- | Send an output.
-send :: Outputish o => o -> Duplex i o ()
+send :: (MonadIO m,Outputish o) => o -> DuplexT m i o ()
 send o =
   do out <- DuplexT (asks stateOut)
      io (writeChan out o)

@@ -222,7 +222,7 @@ instance ToLisp SomeException where
 -- | Command.
 data Command a where
   LoadTarget    :: Text -> Command (Producer Msg (SuccessFlag,Integer))
-  Eval          :: Text -> Command (Duplex Text Text (SuccessFlag,Text))
+  Eval          :: Text -> Command (Duplex Text Text EvalResult)
   Ping          :: Integer -> Command (Returns Integer)
   TypeOf        :: Text -> Command (Returns Text)
   LocationAt    :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns SrcSpan)
@@ -235,6 +235,15 @@ data Command a where
   SetCurrentDir :: Text -> Command (Returns ())
 
 deriving instance Show (Command a)
+
+-- | Evaluation result.
+data EvalResult =
+  NewContext [String]
+  deriving (Show)
+
+instance ToLisp EvalResult where
+  toLisp (NewContext is) =
+    L.List [L.Symbol "new-context",toLisp is]
 
 -- | A message.
 data Msg =
