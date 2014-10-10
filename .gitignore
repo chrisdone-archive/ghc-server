@@ -7,3 +7,5 @@ cabal-dev/
 TAGS
 tags
 *.tag
+*.dyn_hi
+*.dyn_o
