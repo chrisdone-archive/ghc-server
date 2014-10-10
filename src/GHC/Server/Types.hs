@@ -66,6 +66,30 @@ instance GhcMonad (DuplexT Ghc i o) where
   setSession s =
     DuplexT (ReaderT (const (setSession s)))
 
+instance ExceptionMonad (LoggingT Ghc) where
+  gcatch (LoggingT fm) fh =
+    LoggingT (\r ->
+               gcatch (fm r)
+                      (\e ->
+                         let (LoggingT fh') = fh e
+                         in fh' r))
+  gmask getsF =
+    LoggingT (\r ->
+               gmask (\f ->
+                        case getsF (\(LoggingT x') ->
+                                      LoggingT (f . x')) of
+                          (LoggingT rf) -> rf r))
+
+instance HasDynFlags (LoggingT Ghc) where
+  getDynFlags =
+    LoggingT (const getDynFlags)
+
+instance GhcMonad (LoggingT Ghc) where
+  getSession =
+    LoggingT (const getSession)
+  setSession s =
+    LoggingT (const (setSession s))
+
 type Duplex i o r = DuplexT IO i o r
 
 -- | Command that only produces duplexing results.

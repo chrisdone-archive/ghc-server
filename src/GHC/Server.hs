@@ -9,6 +9,7 @@ module GHC.Server where
 
 import           GHC.Compat
 import           GHC.Server.Commands
+import           GHC.Server.Ghc
 import           GHC.Server.Logging
 import           GHC.Server.TH
 import           GHC.Server.Types
@@ -72,7 +73,8 @@ startGhc :: IO (Chan (Ghc ()))
 startGhc =
   do chan <- newChan
      void (forkIO (runGhc (Just libdir)
-                          (forever (protect (join (io (readChan chan)))))))
+                          (do runLogging initializeSlave
+                              forever (protect (join (io (readChan chan)))))))
      return chan
   where protect m =
           gcatch m

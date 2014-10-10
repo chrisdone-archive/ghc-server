@@ -17,7 +17,7 @@ import           Linker
 import           System.Environment
 
 -- | Initialize the GHC service.
-initializeSlave :: DuplexT Ghc i o ()
+initializeSlave :: LoggingT Ghc ()
 initializeSlave =
   do (libincs,exts,pkgs) <- liftIO getDependencyInfo
      initialDynFlags <- getSessionDynFlags
@@ -90,7 +90,7 @@ loadedImports = map (\m -> "import " <> moduleNameString m)
 
 -- | Make user flags, if HSENV is activated then use the
 -- PACKAGE_DB_FOR_GHC environment variable for package flags.
-makeUserFlags :: DuplexT Ghc i o [String]
+makeUserFlags :: LoggingT Ghc [String]
 makeUserFlags =
   do env <- liftIO getEnvironment
      case lookup "HSENV" env >> lookup "PACKAGE_DB_FOR_GHC" env of
