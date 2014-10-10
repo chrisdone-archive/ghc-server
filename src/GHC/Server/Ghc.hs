@@ -101,5 +101,5 @@ makeUserFlags =
            Nothing -> return []
 
 -- | Pretty print a type.
-formatType :: DynFlags -> Type -> [Text]
-formatType dflags = map T.pack . lines . showppr dflags . snd . splitForAllTys
+formatType :: DynFlags -> Type -> Text
+formatType dflags = T.pack . unwords . lines . showppr dflags . snd . splitForAllTys

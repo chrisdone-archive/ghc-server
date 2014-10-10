@@ -56,9 +56,16 @@ eval :: Text -> Duplex Text Text EvalResult
 eval e = withGhc (tryImportOrDecls e)
 
 -- | Type of identifier.
-typeOf :: Text -> Returns [Text]
+typeOf :: Text -> Returns Text
 typeOf expr =
   withGhc (do typ <- exprType (T.unpack expr)
+              df <- getSessionDynFlags
+              return (formatType df typ))
+
+-- | Kind of the identifier.
+kindOf :: Text -> Returns Text
+kindOf expr =
+  withGhc (do typ <- typeKind (T.unpack expr)
               df <- getSessionDynFlags
               return (formatType df typ))
 
@@ -73,10 +80,6 @@ typeAt = undefined
 -- | Find uses.
 uses :: FilePath -> Text -> Int -> Int -> Int -> Int -> Returns Text
 uses = undefined
-
--- | Kind of the identifier.
-kindOf :: Text -> Returns Text
-kindOf = undefined
 
 -- | Info of the identifier.
 infoOf :: Text -> Returns Text

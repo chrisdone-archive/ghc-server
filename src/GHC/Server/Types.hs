@@ -199,7 +199,7 @@ instance L.FromLisp SomeCommand where
                           (fromIntegral sc)
                           (fromIntegral el)
                           (fromIntegral ec)))
-  parseLisp (L.List (L.Symbol "kind":L.String x:_)) =
+  parseLisp (L.List (L.Symbol "kind-of":L.String x:_)) =
     return (SomeCommand (KindOf x))
   parseLisp (L.List (L.Symbol "info":L.String x:_)) =
     return (SomeCommand (InfoOf x))
@@ -224,7 +224,7 @@ data Command a where
   LoadTarget    :: Text -> Command (Producer Msg (SuccessFlag,Integer))
   Eval          :: Text -> Command (Duplex Text Text EvalResult)
   Ping          :: Integer -> Command (Returns Integer)
-  TypeOf        :: Text -> Command (Returns [Text])
+  TypeOf        :: Text -> Command (Returns Text)
   LocationAt    :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns SrcSpan)
   TypeAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   Uses          :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
