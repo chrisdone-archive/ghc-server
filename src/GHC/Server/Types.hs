@@ -11,7 +11,30 @@
 
 -- | All server types.
 
-module GHC.Server.Types where
+module GHC.Server.Types
+  (-- * Commands
+   Command(..)
+  -- * Duplex monad
+  ,DuplexT(..)
+  ,DuplexState(..)
+  ,Duplex
+  ,Producer
+  ,Returns
+  ,Unit
+  -- * Transport types
+  ,Incoming(..)
+  ,Outgoing(..)
+  ,Input(..)
+  ,Output(..)
+  ,Outputish
+  ,Inputish
+  -- * Generic types
+  ,SomeCommand(..)
+  ,SomeChan(..)
+  -- * Result types
+  ,EvalResult(..)
+  ,Msg(..))
+  where
 
 import           Control.Monad.Logger
 import           GHC.Compat
@@ -90,6 +113,7 @@ instance GhcMonad (LoggingT Ghc) where
   setSession s =
     LoggingT (const (setSession s))
 
+-- | Duplex transformed over IO. Default command handler monad.
 type Duplex i o r = DuplexT IO i o r
 
 -- | Command that only produces duplexing results.

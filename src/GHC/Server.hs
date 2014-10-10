@@ -5,7 +5,9 @@
 
 -- | Server interface to GHC.
 
-module GHC.Server where
+module GHC.Server
+  (startServer)
+  where
 
 import           GHC.Compat
 import           GHC.Server.Commands

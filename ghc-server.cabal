@@ -18,14 +18,14 @@ library
   ghc-options:       -O2 -Wall -threaded
   exposed-modules:   GHC.Server
                      GHC.Server.Commands
-                     GHC.Server.Duplex
-                     GHC.Server.Logging
-                     GHC.Server.TH
                      GHC.Server.Types
-                     GHC.Server.Ghc
-                     GHC.Server.Cabal
                      GHC.Server.Eval
+                     GHC.Server.Logging
   other-modules:     GHC.Compat
+                     GHC.Server.Cabal
+                     GHC.Server.Duplex
+                     GHC.Server.Ghc
+                     GHC.Server.TH
   default-language: Haskell2010
   default-extensions: FlexibleInstances, TemplateHaskell
   build-depends:     atto-lisp
