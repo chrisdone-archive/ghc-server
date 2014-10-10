@@ -5,6 +5,7 @@
 module GHC.Server.Cabal where
 
 import Data.Maybe
+import Data.Monoid
 import Data.Version
 import Distribution.Package
 import Distribution.PackageDescription
@@ -36,13 +37,13 @@ getDependencyInfo =
 showExt :: Extension -> String
 showExt g =
   case g of
-    EnableExtension e -> "-X" ++  show e
-    DisableExtension e -> "-XNo" ++ show e
-    UnknownExtension e -> "-X" ++ show e
+    EnableExtension e -> "-X" <> show e
+    DisableExtension e -> "-XNo" <> show e
+    UnknownExtension e -> "-X" <> show e
 
 -- | Render package id to foo-1.2.3
 renderPackageId :: PackageId -> String
-renderPackageId pid = unPkgName (pkgName pid) ++ "-" ++ showVersion (pkgVersion pid)
+renderPackageId pid = unPkgName (pkgName pid) <> "-" <> showVersion (pkgVersion pid)
   where unPkgName (PackageName n) = n
 
 -- | Get dependencies. FIXME: Deal with targets.

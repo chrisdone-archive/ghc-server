@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -12,6 +13,7 @@
 
 module GHC.Server.Types where
 
+import           Control.Monad.Logger
 import           GHC.Compat
 
 import           Control.Concurrent
@@ -32,9 +34,39 @@ data DuplexState i o =
               ,stateGhc :: !(Chan (Ghc ()))}
 
 -- | Duplexing full duplex command handling monad.
-newtype Duplex i o r =
-  Duplex {runDuplex :: ReaderT (DuplexState i o) IO r}
+newtype DuplexT m i o r =
+  DuplexT {runDuplexT :: ReaderT (DuplexState i o) m r}
   deriving (Functor,Applicative,Monad,MonadIO)
+
+instance ExceptionMonad (DuplexT Ghc i o) where
+  gcatch (DuplexT (ReaderT fm)) fh =
+    DuplexT (ReaderT (\r ->
+                        gcatch (fm r)
+                               (\e ->
+                                  let DuplexT (ReaderT fh') = fh e
+                                  in fh' r)))
+  gmask getsF =
+    DuplexT (ReaderT (\r ->
+                        gmask (\f ->
+                                 case getsF (\(DuplexT (ReaderT x')) ->
+                                               DuplexT (ReaderT (f . x'))) of
+                                   DuplexT (ReaderT rf) -> rf r)))
+
+instance MonadLogger (DuplexT Ghc i o) where
+  monadLoggerLog loc source level msg =
+    liftIO (runStdoutLoggingT (monadLoggerLog loc source level msg))
+
+instance HasDynFlags (DuplexT Ghc i o) where
+  getDynFlags =
+    DuplexT (ReaderT (const getDynFlags))
+
+instance GhcMonad (DuplexT Ghc i o) where
+  getSession =
+    DuplexT (ReaderT (const getSession))
+  setSession s =
+    DuplexT (ReaderT (const (setSession s)))
+
+type Duplex i o r = DuplexT IO i o r
 
 -- | Command that only produces duplexing results.
 type Producer o r = Duplex () o r

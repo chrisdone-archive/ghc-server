@@ -21,19 +21,18 @@ import qualified Data.Text as T
 -- | Load a module.
 loadTarget :: Text -> Producer Msg (SuccessFlag,Integer)
 loadTarget filepath =
-  do warnings <- liftIO (atomically (newTVar 0))
-     result <- withGhc (\liftDuplex ->
-                          do df <- getSessionDynFlags
-                             withMessages (recordMessage warnings liftDuplex df)
-                                          doLoad)
-     count <- liftIO (atomically (readTVar warnings))
-     return (result,count)
-  where recordMessage warnings liftDuplex df =
+  withGhc (do df <- getSessionDynFlags
+              warnings <- liftIO (atomically (newTVar 0))
+              result <- withMessages (recordMessage warnings df)
+                                     doLoad
+              count <- liftIO (atomically (readTVar warnings))
+              return (result,count))
+  where recordMessage warnings df =
           \sev sp doc ->
-            do void (liftIO (liftDuplex (send (Msg sev sp (T.pack (showSDoc df doc))))))
+            do send (Msg sev sp (T.pack (showSDoc df doc)))
                case sev of
                  SevWarning ->
-                   atomically (modifyTVar' warnings (+ 1))
+                   liftIO (atomically (modifyTVar' warnings (+ 1)))
                  _ -> return ()
         doLoad =
           do target <- guessTarget (T.unpack filepath)
@@ -42,7 +41,7 @@ loadTarget filepath =
              result <- load LoadAllTargets
              loaded <- getModuleGraph >>= filterM isLoaded . map ms_mod_name
              mapM parseImportDecl
-                  (["import Prelude"] ++
+                  (["import Prelude"] <>
                    loadedImports loaded) >>=
                setContext
              return result

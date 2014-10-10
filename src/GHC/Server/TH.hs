@@ -33,7 +33,7 @@ dispatch t =
                 $(caseE [|cmd'|]
                         (map (\(ForallC _ [EqualP _ returnType] (NormalC name args)) ->
                                 let argNames =
-                                      zipWith (const . mkName . ("x" ++) . show)
+                                      zipWith (const . mkName . ("x" <>) . show)
                                               [0 :: Int ..]
                                               args
                                 in match (conP name (map varP argNames))
@@ -49,10 +49,10 @@ dispatch t =
                                                                                                           h'
                                                                                                           (L.encode (Outgoing $([|ix'|]) (FeedOut o)))))
                                                                                     $(logDebug) ("Finished consuming outChan.")))))
-                                                        r <- liftIO (runReaderT (runDuplex ($(foldl (\f a ->
-                                                                                                       appE f a)
-                                                                                                    (varE (mkName (decapitalize (nameBase name))))
-                                                                                                    (map varE argNames)) :: $(return returnType)))
+                                                        r <- liftIO (runReaderT (runDuplexT ($(foldl (\f a ->
+                                                                                                        appE f a)
+                                                                                                     (varE (mkName (decapitalize (nameBase name))))
+                                                                                                     (map varE argNames)) :: $(return returnType)))
                                                                                 (DuplexState inputChan'
                                                                                              outChan
                                                                                              ghcChan'))
