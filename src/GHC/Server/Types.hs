@@ -12,8 +12,12 @@
 -- | All server types.
 
 module GHC.Server.Types
-  (-- * Commands
-   Command(..)
+  (-- * Project state
+   State(..)
+  ,ModInfo(..)
+  ,SpanInfo(..)
+  -- * Commands
+  ,Command(..)
   -- * Duplex monad
   ,DuplexT(..)
   ,DuplexState(..)
@@ -36,16 +40,41 @@ module GHC.Server.Types
   ,Msg(..))
   where
 
-import           Control.Monad.Logger
 import           GHC.Compat
 
 import           Control.Concurrent
+import           Control.Concurrent.STM.TVar
+import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.AttoLisp (FromLisp(..),ToLisp(..))
 import qualified Data.AttoLisp as L
 import           Data.Attoparsec.Number
+import           Data.ByteString (ByteString)
+import           Data.Map (Map)
 import           Data.Text (Text)
 import qualified Data.Text as T
+
+--------------------------------------------------------------------------------
+-- Project state
+
+-- | Project-wide state.
+data State =
+  State {stateModuleInfos :: !(TVar (Map ModuleName ModInfo))}
+
+-- | Info about a module.
+data ModInfo =
+  ModInfo {modinfoSummary :: !ModSummary
+          ,modinfoSpans :: ![SpanInfo]
+          ,modinfoInfo :: !ModuleInfo}
+
+-- | Type of some span of source code.
+data SpanInfo =
+  SpanInfo {spaninfoStartLine :: {-# UNPACK #-} !Int
+           ,spaninfoStartCol :: {-# UNPACK #-} !Int
+           ,spaninfoEndLine :: {-# UNPACK #-} !Int
+           ,spaninfoEndCol :: {-# UNPACK #-} !Int
+           ,spaninfoType :: {-# UNPACK #-} !ByteString
+           ,spaninfoVar :: !(Maybe Id)}
 
 --------------------------------------------------------------------------------
 -- Duplex types
@@ -54,7 +83,8 @@ import qualified Data.Text as T
 data DuplexState i o =
   DuplexState {duplexIn :: !(Chan i)
               ,duplexOut :: !(Chan o)
-              ,duplexRunGhc :: !(Chan (Ghc ()))}
+              ,duplexRunGhc :: !(Chan (Ghc ()))
+              ,duplexState :: !State}
 
 -- | Duplexing full duplex command handling monad.
 newtype DuplexT m i o r =

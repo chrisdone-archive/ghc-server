@@ -26,7 +26,7 @@ dispatch t =
   do info <- reify t
      case info of
        TyConI (DataD _ _ _ cs _) ->
-         [|\ghcChan' ix' h' inputChan' cmd' ->
+         [|\ghcChan' ix' h' inputChan' cmd' state' ->
              do $(logDebug)
                   ("Command: " <>
                    T.pack (show cmd'))
@@ -55,7 +55,8 @@ dispatch t =
                                                                                                      (map varE argNames)) :: $(return returnType)))
                                                                                 (DuplexState inputChan'
                                                                                              outChan
-                                                                                             ghcChan'))
+                                                                                             ghcChan'
+                                                                                             state'))
                                                         $(logDebug)
                                                           ("Result: " <>
                                                            T.pack (show r))

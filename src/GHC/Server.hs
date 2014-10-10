@@ -41,16 +41,18 @@ startServer :: Int -> LoggingT IO ()
 startServer port =
   do socket <- io (listenOn (PortNumber (fromIntegral port)))
      ghcChan <- io startGhc
+     modInfos <- io (atomically (newTVar mempty))
+     let state = State modInfos
      $(logInfo)
        ("Listening on port " <>
         T.pack (show port) <>
         " ...")
      forever (do (h,host,_port) <- io (accept socket)
-                 io (startClient ghcChan host h))
+                 io (startClient state ghcChan host h))
 
 -- | Run a command handling client.
-startClient :: Chan (Ghc ()) -> String -> Handle -> IO ()
-startClient ghcChan host h =
+startClient :: State -> Chan (Ghc ()) -> String -> Handle -> IO ()
+startClient state ghcChan host h =
   void (forkIO (runLogging go))
   where go =
           do $(logInfo) ("New connection from " <> T.pack host)
@@ -62,7 +64,7 @@ startClient ghcChan host h =
                                                 return Nothing)))
                        case mline of
                          Just line ->
-                           do handleLispLine ghcChan h activeCommands line
+                           do handleLispLine state ghcChan h activeCommands line
                               loop
                          _ -> return ())
              $(logInfo) ("Connection closed to " <> T.pack host)
@@ -90,8 +92,13 @@ startGhc =
 -- Command handling
 
 -- | Handle an incoming Lisp-encoded line.
-handleLispLine :: Chan (Ghc ()) -> Handle -> TVar (HashMap Integer SomeChan) -> ByteString -> LoggingT IO ()
-handleLispLine ghcChan h activeCommands line =
+handleLispLine :: State
+               -> Chan (Ghc ())
+               -> Handle
+               -> TVar (HashMap Integer SomeChan)
+               -> ByteString
+               -> LoggingT IO ()
+handleLispLine state ghcChan h activeCommands line =
   case fromLispString line of
     Left e ->
       $(logError) ("Erroneous input Lisp: " <> T.pack e)
@@ -103,9 +110,9 @@ handleLispLine ghcChan h activeCommands line =
                 T.pack (show c))
              inputChan <- io (newInputChan c)
              io (atomically
-                       (modifyTVar activeCommands
-                                   (M.insert ix (SomeChan inputChan))))
-             void (io (forkIO (do runLogging ($(dispatch ''Command) ghcChan ix h inputChan c)
+                   (modifyTVar activeCommands
+                               (M.insert ix (SomeChan inputChan))))
+             void (io (forkIO (do runLogging ($(dispatch ''Command) ghcChan ix h inputChan c state)
                                   atomically
                                     (modifyTVar activeCommands
                                                 (M.delete ix)))))
