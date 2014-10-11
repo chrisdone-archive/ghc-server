@@ -120,7 +120,8 @@
   (let* ((name (format "*ghc-server:%s*" name))
          (process (get-process name)))
     (if (and process (process-live-p process))
-        process
+        (progn (error "Already connected!")
+               process)
       (progn
         (when process
           (delete-process process))
@@ -129,14 +130,18 @@
          :host (if prompt
                    (read-from-minibuffer "Host: " "localhost")
                  "localhost")
-         :service (if prompt
-                      (string-to-number
-                       (read-from-minibuffer "Port: " "5233"))
-                    (ghc-let-if (port (ghc-session-port (ghc-session)))
-                                port
-                                (error "No port specified. Run M-x ghc/start to start a local server or use C-u M-x ghc/connect to specify a host/port.")))
+         :service (let ((port (if prompt
+                              (string-to-number
+                               (read-from-minibuffer "Port: " "5233"))
+                            (ghc-let-if (port (ghc-session-port (ghc-session)))
+                                        port
+                                        (error "No port specified. Run M-x ghc/start to start a local server or use C-u M-x ghc/connect to specify a host/port.")))))
+                    (setf (ghc-session-port (ghc-session))
+                          port)
+                    port)
          :sentinel 'ghc-con-process-sentinel
-         :filter 'ghc-con-process-filter)))))
+         :filter 'ghc-con-process-filter)
+        (message "Connected to GHC server!")))))
 
 (defun ghc-con-make (&optional prompt)
   "Make a connection and locally assign it."
