@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
 -- | Get information on modules, identifiers, etc.
@@ -8,6 +9,8 @@ module GHC.Server.Model.Info (getModInfo) where
 import           GHC.Compat
 import           GHC.Server.Types
 
+import qualified Data.Text as T
+import           Control.Monad.Logger
 import qualified Data.ByteString.Char8 as S8
 import           Data.Generics (GenericQ, mkQ, extQ, gmapQ)
 import           Data.List
@@ -16,9 +19,11 @@ import           Data.Monoid
 import           Data.Typeable
 
 -- | Get info about the module: summary, types, etc.
-getModInfo :: GhcMonad m => ModuleName -> m ModInfo
+getModInfo :: (MonadLogger m,GhcMonad m) => ModuleName -> m ModInfo
 getModInfo name =
-  do m <- getModSummary name
+  do df <- getSessionDynFlags
+     $(logDebug) ("Generating info for module " <> T.pack (showppr df name))
+     m <- getModSummary name
      p <- parseModule m
      typechecked <- typecheckModule p
      allTypes <- processAllTypeCheckedModule typechecked

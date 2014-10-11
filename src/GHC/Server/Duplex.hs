@@ -45,11 +45,25 @@ withGhc m =
                           io (putMVar result v))
             takeMVar result)
 
+
 -- | Run a Ghc action in another thread. Transform over Ghc, running
 -- the transformed GHC in isolation.
 forkGhc :: (MonadDuplex i o m)
-        => DuplexT Ghc i o () -> m ThreadId
+        => Ghc () -> m ThreadId
 forkGhc m =
+  do st <- ask
+     ghcChan <- asks duplexRunGhc
+     io (forkIO (do result <- newEmptyMVar
+                    writeChan ghcChan
+                              (do v <- m
+                                  io (putMVar result v))
+                    takeMVar result))
+
+-- | Run a Ghc action in another thread. Transform over Ghc, running
+-- the transformed GHC in isolation.
+forkWithGhc :: (MonadDuplex i o m)
+            => DuplexT Ghc i o () -> m ThreadId
+forkWithGhc m =
   do st <- ask
      ghcChan <- asks duplexRunGhc
      io (forkIO (do result <- newEmptyMVar
@@ -62,6 +76,11 @@ forkGhc m =
 -- | Get the global module infos value.
 getModuleInfos :: (MonadDuplex i o m) => m (Map ModuleName ModInfo)
 getModuleInfos =
-  do var <- asks (stateModuleInfos . duplexState)
+  do var <- getModuleInfosVar
      infos <- liftIO (atomically (readTVar var))
      return infos
+
+-- | Get the global module infos value.
+getModuleInfosVar :: (MonadDuplex i o m) => m (TVar (Map ModuleName ModInfo))
+getModuleInfosVar =
+  asks (stateModuleInfos . duplexState)

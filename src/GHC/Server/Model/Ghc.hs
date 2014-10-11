@@ -12,11 +12,11 @@ import           GHC.Server.Cabal
 import           GHC.Server.Defaults
 import           GHC.Server.Types
 
+import           Control.Concurrent.STM
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.List
 import           Data.Monoid
-
 import qualified Data.Text as T
 import           Linker
 import           System.Environment
@@ -61,26 +61,44 @@ initializeGhc =
         src [] = []
         src xs = map (\x -> "-i" <> x) xs
 
--- | Add any GHC logs.
+-- | Handle any messages coming from GHC. GHC seems to disregard
+-- resetting the 'log_action' for some reason, so we set a log action
+-- which will read from a var for its action and that var will be
+-- reset once the action is done. Any further messages broadcast on
+-- that handler will be printed in debugging mode as bogus.
 withMessages :: (MonadDuplex i o m,GhcMonad m)
-             => (Severity -> SrcSpan -> SDoc -> Duplex i o ()) -> m a -> m a
+             => (DynFlags -> Severity -> SrcSpan -> SDoc -> Duplex i o ()) -> m a -> m a
 withMessages handler m =
-  do dflags <- getSessionDynFlags
+  do handlerV <- liftIO (atomically (newTVar handler))
      st <- ask
-     setLogAction (addLog st)
-     result <- m
-     _ <- setSessionDynFlags dflags
-     return result
-  where addLog st dflags severity' span' _style msg =
-          runReaderT (runDuplexT (handler severity span' msg))
-                     st
-          where msgstr = showSDoc dflags msg
-                severity =
-                  case severity' of
-                    SevWarning
-                      | isError msgstr -> SevError
-                      | otherwise -> SevWarning
-                    s -> s
+     oldFlags <- getSessionDynFlags
+     setLogAction
+       (\df sv sp _ msg ->
+          do f <- atomically (readTVar handlerV)
+             runReaderT (runDuplexT (f df (translateSeverity df sv msg) sp msg))
+                        st)
+     v <- m
+     newFlags <- getSessionDynFlags
+     void (setSessionDynFlags newFlags {log_action = log_action oldFlags})
+     liftIO (atomically
+               (writeTVar handlerV
+                          (\df _ _ sdoc ->
+                             $(logDebug) ("Bogus output after log action has been reset: " <>
+                             T.pack (showSDoc df sdoc)))))
+     return v
+
+-- | GHC gives unhelpful severity in the presence of
+-- -fdefer-type-errors, so we try to reclaim error information by
+-- doing dirty wirty parsing.
+translateSeverity :: DynFlags -> Severity -> SDoc -> Severity
+translateSeverity df sv msg =
+  case sv of
+    SevWarning
+      | isError msgstr -> SevError
+      | otherwise -> SevWarning
+    s -> s
+  where msgstr = showSDoc df msg
+
 
 -- | Is the message actually an error?
 isError :: [Char] -> Bool
@@ -90,6 +108,8 @@ isError s =
   isPrefixOf "Couldn't match "
              (trim s) ||
   isPrefixOf "Ambiguous "
+             (trim s) ||
+  isPrefixOf "Could not deduce "
              (trim s)
   where trim = unwords . words
 

@@ -207,9 +207,8 @@ resolveType spans' sl sc el ec =
 -- | Guess a module name from a file path.
 guessModule :: GhcMonad m
             => Map ModuleName ModInfo -> FilePath -> m (Maybe ModuleName)
-guessModule infos path =
-  do fp <- liftIO (makeRelativeToCurrentDirectory path)
-     target <- guessTarget fp Nothing
+guessModule infos fp =
+  do target <- guessTarget fp Nothing
      case targetId target of
        TargetModule mn -> return (Just mn)
        _ ->
@@ -220,4 +219,20 @@ guessModule infos path =
                     snd)
                    (M.toList infos) of
            Just (mn,_) -> return (Just mn)
-           Nothing -> return Nothing
+           Nothing ->
+             do fp <- liftIO (makeRelativeToCurrentDirectory fp)
+                target <- guessTarget fp Nothing
+                case targetId target of
+                  TargetModule mn ->
+                    return (Just mn)
+                  _ ->
+                    case find ((Just fp ==) .
+                               ml_hs_file .
+                               ms_location .
+                               modinfoSummary .
+                               snd)
+                              (M.toList infos) of
+                      Just (mn,_) ->
+                        return (Just mn)
+                      Nothing ->
+                        return Nothing
