@@ -43,10 +43,11 @@ loadTarget filepath =
              setTargets [target]
              result <- load LoadAllTargets
              loaded <- getModuleGraph >>= filterM isLoaded . map ms_mod_name
-             mapM parseImportDecl
-                  (["import Prelude"] <>
-                   loadedImports loaded) >>=
+             mapM parseImportDecl (necessaryImports <> loadedImports loaded) >>=
                setContext
+             case result of
+               Succeeded -> collectTypeInfo loaded
+               _ -> return ()
              return result
 
 -- | Ping/pong.
