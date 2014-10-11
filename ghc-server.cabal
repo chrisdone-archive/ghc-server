@@ -25,7 +25,9 @@ library
                      GHC.Server.Duplex
                      GHC.Server.Model.Ghc
                      GHC.Server.Model.Info
+                     GHC.Server.Model.Find
                      GHC.Server.Controller.Eval
+                     GHC.Server.Controller.Info
                      GHC.Server.Controller.Load
                      GHC.Server.Controller.Context
                      GHC.Server.Controller.Debug
