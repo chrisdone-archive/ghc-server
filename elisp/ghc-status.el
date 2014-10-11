@@ -31,6 +31,11 @@
 (define-key ghc-status-mode-map (kbd "r") 'ghc-status-repl)
 (define-key ghc-status-mode-map (kbd "c") 'ghc-status-cabal)
 (define-key ghc-status-mode-map (kbd "m") 'ghc-status-messages)
+(define-key ghc-status-mode-map (kbd "l") 'ghc-status-log)
+
+(defun ghc-status-log ()
+  (interactive)
+  (switch-to-buffer (format "*ghc-server:%s*" (ghc-session-name (ghc-session)))))
 
 (defun ghc-status-cabal ()
   "Open the .cabal file."

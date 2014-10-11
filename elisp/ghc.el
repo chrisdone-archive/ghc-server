@@ -36,7 +36,7 @@
      port
      (ghc-session-dir session)
      (ghc-session-name session))
-    (setf (ghc-session-port session)
+    (setf (ghc-session-port (ghc-session))
           port)))
 
 (defun ghc/connect (prompt)
