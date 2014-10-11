@@ -5,20 +5,18 @@
 
 -- | Ghc monad actions.
 
-module GHC.Server.Ghc where
+module GHC.Server.Ghc (initializeGhc,withMessages,loadedImports) where
 
 import           GHC.Compat
 import           GHC.Server.Cabal
-import           GHC.Server.Info
+import           GHC.Server.Defaults
 import           GHC.Server.Types
 
-import           Control.Concurrent.STM
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.List
-import qualified Data.Map as M
 import           Data.Monoid
-import           Data.Text (Text)
+
 import qualified Data.Text as T
 import           Linker
 import           System.Environment
@@ -62,10 +60,6 @@ initializeGhc =
           map (\pkg -> "-package " <> renderPackageId pkg) xs
         src [] = []
         src xs = map (\x -> "-i" <> x) xs
-
--- | Basic standard imports.
-necessaryImports :: [String]
-necessaryImports = ["import Prelude"]
 
 -- | Add any GHC logs.
 withMessages :: (MonadDuplex i o m,GhcMonad m)
@@ -116,35 +110,3 @@ makeUserFlags =
            Just path ->
              return ["-hide-all-packages","-pkg-db=" <> path]
            Nothing -> return []
-
--- | Pretty print a type.
-formatType :: DynFlags -> Type -> Text
-formatType dflags = T.pack . unwords . lines . showppr dflags . snd .
-                    splitForAllTys
-
--- | Apply a flag.
-setFlag :: GhcMonad m => String -> m ()
-setFlag flag =
-  do df <- getSessionDynFlags
-     (dflags,_,_) <- parseDynamicFlags
-                       df
-                       (map (mkGeneralLocated "flag")
-                            [flag])
-     void (setSessionDynFlags dflags)
-
--- | Collect type info data for the loaded modules.
-collectInfo :: (MonadDuplex i o m,GhcMonad m)
-            => [ModuleName] -> m ()
-collectInfo loaded =
-  do ($(logDebug)
-        ("Collecting module data for " <>
-         T.pack (show (length loaded)) <>
-         " modules ..."))
-     forM_ loaded
-           (\name ->
-              do info <- getModInfo name
-                 var <- asks (stateModuleInfos . duplexState)
-                 io (atomically
-                       (modifyTVar var
-                                   (M.insert name info))))
-     $(logDebug) ("Done collecting module data.")
