@@ -179,20 +179,21 @@
     (ghc-repl-complete-prompt)
     (when result
       (ecase (car result)
-        (eval-import
-         (when nil
-           (message "Imported: %S" (cadr result))))
-        (eval-result
-         (ghc-repl-result (cadr result)))
-        (decl-result
-         (if (and (consp (cadr result))
-                  (not (equalp (cadr result) (list "it"))))
+        (new-context
+         (message "New context: %s" (mapconcat 'identity
+                                               (cadr result)
+                                               ", ")))
+        (eval
+         (ghc-repl-result result))
+        (decl-resul
+         (if (and (consp result)
+                  (not (equalp result (list "it"))))
              (ghc-repl-output
               (concat (propertize "Declared names: " 'face 'font-lock-comment-face)
                       (format "%s"
                               (mapconcat (lambda (name)
                                            (propertize name 'face 'font-lock-reference-face))
-                                         (cadr result)
+                                         result
                                          (propertize ", "
                                                      'face 'font-lock-comment-face)))))
            (insert "\n")))))
