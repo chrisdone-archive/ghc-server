@@ -36,13 +36,28 @@ send o =
 withGhc :: (Inputish i,Outputish o)
         => DuplexT Ghc i o r -> Duplex i o r
 withGhc m =
-  do st <- DuplexT ask
-     ghcChan <- DuplexT (asks duplexRunGhc)
+  do st <- ask
+     ghcChan <- asks duplexRunGhc
      io (do result <- newEmptyMVar
-            io (writeChan ghcChan
-                          (do v <- runReaderT (runDuplexT m) st
-                              io (putMVar result v)))
+            writeChan ghcChan
+                      (do v <- runReaderT (runDuplexT m)
+                                          st
+                          io (putMVar result v))
             takeMVar result)
+
+-- | Run a Ghc action in another thread. Transform over Ghc, running
+-- the transformed GHC in isolation.
+forkGhc :: (MonadDuplex i o m)
+        => DuplexT Ghc i o () -> m ThreadId
+forkGhc m =
+  do st <- ask
+     ghcChan <- asks duplexRunGhc
+     io (forkIO (do result <- newEmptyMVar
+                    writeChan ghcChan
+                              (do v <- runReaderT (runDuplexT m)
+                                                  st
+                                  io (putMVar result v))
+                    takeMVar result))
 
 -- | Get the global module infos value.
 getModuleInfos :: (MonadDuplex i o m) => m (Map ModuleName ModInfo)

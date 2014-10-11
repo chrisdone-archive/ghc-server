@@ -53,6 +53,7 @@ library
                    , template-haskell
                    , text
                    , unordered-containers
+                   , directory
   if impl(ghc<7.4)
     build-depends: ghc >= 7.4
   if impl(ghc>=7.4)

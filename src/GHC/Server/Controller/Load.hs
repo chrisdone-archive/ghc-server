@@ -48,7 +48,7 @@ loadTarget filepath =
              mapM parseImportDecl (necessaryImports <> loadedImports loaded) >>=
                setContext
              case result of
-               Succeeded -> collectInfo loaded
+               Succeeded -> void (forkGhc (collectInfo loaded))
                _ -> return ()
              return result
 
