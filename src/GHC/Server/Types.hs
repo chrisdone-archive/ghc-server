@@ -331,12 +331,12 @@ instance L.FromLisp SomeCommand where
                       (fromIntegral ec)))
   parseLisp (L.List (L.Symbol "uses":L.String fp:L.String string:L.Number (I sl):L.Number (I sc):L.Number (I el):L.Number (I ec):_)) =
     return (SomeCommand
-              (Uses (T.unpack fp)
-                    string
-                    (fromIntegral sl)
-                    (fromIntegral sc)
-                    (fromIntegral el)
-                    (fromIntegral ec)))
+              (UsesAt (T.unpack fp)
+                      string
+                      (fromIntegral sl)
+                      (fromIntegral sc)
+                      (fromIntegral el)
+                      (fromIntegral ec)))
   parseLisp (L.List (L.Symbol "loc-at":L.String fp:L.String string:L.Number (I sl):L.Number (I sc):L.Number (I el):L.Number (I ec):_)) =
     return (SomeCommand
               (LocationAt (T.unpack fp)
@@ -379,7 +379,7 @@ data Command a where
   -- Location of identifier at point.
   TypeAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   -- Type of identifier at point.
-  Uses          :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
+  UsesAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
   -- Find uses.
   KindOf        :: Text -> Command (Returns Text)
   -- Kind of the identifier.

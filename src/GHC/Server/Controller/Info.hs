@@ -28,8 +28,8 @@ typeAt fp ident sl sc el ec =
        Right sp -> return sp
 
 -- | Find uses.
-uses :: FilePath -> Text -> Int -> Int -> Int -> Int -> Returns Text
-uses fp ident sl sc el ec =
+usesAt :: FilePath -> Text -> Int -> Int -> Int -> Int -> Returns Text
+usesAt fp ident sl sc el ec =
   do infos <- getModuleInfos
      result <- withGhc (findVar infos fp ident sl sc el ec)
      case result of
