@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE CPP #-}
@@ -23,6 +24,7 @@ module GHC.Server.Types
   -- * Duplex monad
   -- $duplex
   ,MonadDuplex
+  ,MonadGhc(..)
   ,DuplexT(..)
   ,DuplexState(..)
   ,Duplex
@@ -43,6 +45,7 @@ module GHC.Server.Types
   ,EvalResult(..)
   ,Msg(..))
   where
+
 
 import           GHC.Compat
 
@@ -156,7 +159,25 @@ type MonadDuplex i o m =
   ,MonadIO m
   ,Inputish i
   ,Outputish o
-  ,MonadLogger m)
+  ,MonadLogger m
+  ,MonadGhc m)
+
+-- | This monad can run GHC actions inside it.
+class MonadGhc m where
+  liftGhc :: Ghc r -> m r
+
+instance MonadGhc (DuplexT IO i o) where
+  liftGhc m =
+    do ghcChan <- asks duplexRunGhc
+       io (do result <- newEmptyMVar
+              io (writeChan ghcChan
+                            (do v <- m
+                                io (putMVar result v)))
+              takeMVar result)
+
+instance MonadGhc (DuplexT Ghc i o) where
+  liftGhc m =
+    DuplexT (ReaderT (const m))
 
 instance ExceptionMonad (DuplexT Ghc i o) where
   gcatch (DuplexT (ReaderT fm)) fh =

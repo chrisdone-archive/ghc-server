@@ -9,7 +9,6 @@ module GHC.Server.Ghc where
 
 import           GHC.Compat
 import           GHC.Server.Cabal
-import           GHC.Server.Duplex
 import           GHC.Server.Info
 import           GHC.Server.Types
 
@@ -134,7 +133,7 @@ setFlag flag =
      void (setSessionDynFlags dflags)
 
 -- | Collect type info data for the loaded modules.
-collectInfo :: (MonadDuplex i o m)
+collectInfo :: (MonadDuplex i o m,GhcMonad m)
             => [ModuleName] -> m ()
 collectInfo loaded =
   do ($(logDebug)
@@ -143,7 +142,7 @@ collectInfo loaded =
          " modules ..."))
      forM_ loaded
            (\name ->
-              do info <- liftGhc (getModInfo name)
+              do info <- getModInfo name
                  var <- asks (stateModuleInfos . duplexState)
                  io (atomically
                        (modifyTVar var
