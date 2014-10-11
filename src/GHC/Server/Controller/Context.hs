@@ -1,6 +1,6 @@
--- | Context-configuring commands. Directory, packages, options, etc.
+-- | Context-configuring controller. Directory, packages, options, etc.
 
-module GHC.Server.Commands.Context (set,packageConf,setCurrentDir) where
+module GHC.Server.Controller.Context (set,packageConf,setCurrentDir) where
 
 import           GHC.Compat
 import           GHC.Server.Duplex

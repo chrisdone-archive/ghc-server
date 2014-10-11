@@ -1,6 +1,6 @@
--- | REPL-context commands.
+-- | REPL-context controller.
 
-module GHC.Server.Commands.REPL
+module GHC.Server.Controller.REPL
   (typeOf,kindOf,infoOf)
   where
 

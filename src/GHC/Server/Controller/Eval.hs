@@ -2,7 +2,7 @@
 
 -- | Run eval.
 
-module GHC.Server.Commands.Eval
+module GHC.Server.Controller.Eval
   (eval)
   where
 

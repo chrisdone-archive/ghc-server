@@ -1,6 +1,6 @@
--- | Debugging commands.
+-- | Debugging controller.
 
-module GHC.Server.Commands.Debug where
+module GHC.Server.Controller.Debug where
 
 import GHC.Server.Types
 

@@ -17,19 +17,19 @@ library
   hs-source-dirs:    src/
   ghc-options:       -O2 -Wall -threaded
   exposed-modules:   GHC.Server
-                     GHC.Server.Commands
+                     GHC.Server.Controllers
                      GHC.Server.Types
                      GHC.Server.Logging
-                     GHC.Server.Info
   other-modules:     GHC.Compat
                      GHC.Server.Cabal
                      GHC.Server.Duplex
-                     GHC.Server.Ghc
-                     GHC.Server.Commands.Eval
-                     GHC.Server.Commands.Load
-                     GHC.Server.Commands.Context
-                     GHC.Server.Commands.Debug
-                     GHC.Server.Commands.REPL
+                     GHC.Server.Model.Ghc
+                     GHC.Server.Model.Info
+                     GHC.Server.Controller.Eval
+                     GHC.Server.Controller.Load
+                     GHC.Server.Controller.Context
+                     GHC.Server.Controller.Debug
+                     GHC.Server.Controller.REPL
                      GHC.Server.Defaults
                      GHC.Server.TH
   default-language: Haskell2010

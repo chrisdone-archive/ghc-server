@@ -5,7 +5,7 @@
 
 -- | Ghc monad actions.
 
-module GHC.Server.Ghc (initializeGhc,withMessages,loadedImports) where
+module GHC.Server.Model.Ghc (initializeGhc,withMessages,loadedImports) where
 
 import           GHC.Compat
 import           GHC.Server.Cabal

@@ -10,8 +10,8 @@ module GHC.Server
   where
 
 import           GHC.Compat
-import           GHC.Server.Commands
-import           GHC.Server.Ghc
+import           GHC.Server.Controllers
+import           GHC.Server.Model.Ghc
 import           GHC.Server.Logging
 import           GHC.Server.TH
 import           GHC.Server.Types

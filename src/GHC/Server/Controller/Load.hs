@@ -5,13 +5,13 @@
 
 -- | Loading targets.
 
-module GHC.Server.Commands.Load where
+module GHC.Server.Controller.Load where
 
 import           GHC.Compat
 import           GHC.Server.Defaults
 import           GHC.Server.Duplex
-import           GHC.Server.Ghc
-import           GHC.Server.Info
+import           GHC.Server.Model.Ghc
+import           GHC.Server.Model.Info
 import           GHC.Server.Types
 
 import           Control.Concurrent.STM
