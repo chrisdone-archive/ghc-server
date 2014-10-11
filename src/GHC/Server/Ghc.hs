@@ -134,12 +134,13 @@ setFlag flag =
      void (setSessionDynFlags dflags)
 
 -- | Collect type info data for the loaded modules.
-collectTypeInfo :: (MonadDuplex i o m)
-                => [ModuleName] -> m ()
-collectTypeInfo loaded =
-  do {-logger (Debug ("Collecting module data for " ++
-                    show (length loaded) ++
-                    " modules ..."))-}
+collectInfo :: (MonadDuplex i o m)
+            => [ModuleName] -> m ()
+collectInfo loaded =
+  do ($(logDebug)
+        ("Collecting module data for " <>
+         T.pack (show (length loaded)) <>
+         " modules ..."))
      forM_ loaded
            (\name ->
               do info <- liftGhc (getModInfo name)
@@ -147,4 +148,4 @@ collectTypeInfo loaded =
                  io (atomically
                        (modifyTVar var
                                    (M.insert name info))))
-     {-logger (Debug ("Done collecting module data."))-}
+     $(logDebug) ("Done collecting module data.")

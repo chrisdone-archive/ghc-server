@@ -46,7 +46,7 @@ loadTarget filepath =
              mapM parseImportDecl (necessaryImports <> loadedImports loaded) >>=
                setContext
              case result of
-               Succeeded -> collectTypeInfo loaded
+               Succeeded -> collectInfo loaded
                _ -> return ()
              return result
 
