@@ -1,3 +1,6 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Ghc monad actions.
@@ -6,11 +9,15 @@ module GHC.Server.Ghc where
 
 import           GHC.Compat
 import           GHC.Server.Cabal
+import           GHC.Server.Duplex
+import           GHC.Server.Info
 import           GHC.Server.Types
 
+import           Control.Concurrent.STM
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.List
+import qualified Data.Map as M
 import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -18,7 +25,8 @@ import           Linker
 import           System.Environment
 
 -- | Initialize the GHC service.
-initializeSlave :: LoggingT Ghc ()
+initializeSlave :: (MonadLogger m,GhcMonad m)
+                => m ()
 initializeSlave =
   do (libincs,exts,pkgs) <- liftIO getDependencyInfo
      initialDynFlags <- getSessionDynFlags
@@ -61,12 +69,11 @@ necessaryImports :: [String]
 necessaryImports = ["import Prelude"]
 
 -- | Add any GHC logs.
-withMessages :: (Severity -> SrcSpan -> SDoc -> Duplex i o ())
-             -> DuplexT Ghc i o a
-             -> DuplexT Ghc i o a
+withMessages :: (MonadDuplex i o m,GhcMonad m)
+             => (Severity -> SrcSpan -> SDoc -> Duplex i o ()) -> m a -> m a
 withMessages handler m =
   do dflags <- getSessionDynFlags
-     st <- DuplexT ask
+     st <- ask
      setLogAction (addLog st)
      result <- m
      _ <- setSessionDynFlags dflags
@@ -125,3 +132,19 @@ setFlag flag =
                        (map (mkGeneralLocated "flag")
                             [flag])
      void (setSessionDynFlags dflags)
+
+-- | Collect type info data for the loaded modules.
+collectTypeInfo :: (MonadDuplex i o m)
+                => [ModuleName] -> m ()
+collectTypeInfo loaded =
+  do {-logger (Debug ("Collecting module data for " ++
+                    show (length loaded) ++
+                    " modules ..."))-}
+     forM_ loaded
+           (\name ->
+              do info <- liftGhc (getModInfo name)
+                 var <- asks (stateModuleInfos . duplexState)
+                 io (atomically
+                       (modifyTVar var
+                                   (M.insert name info))))
+     {-logger (Debug ("Done collecting module data."))-}

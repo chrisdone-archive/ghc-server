@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,6 +22,7 @@ module GHC.Server.Types
   ,Command(..)
   -- * Duplex monad
   -- $duplex
+  ,MonadDuplex
   ,DuplexT(..)
   ,DuplexState(..)
   ,Duplex
@@ -147,6 +149,15 @@ newtype DuplexT m i o r =
   DuplexT {runDuplexT :: ReaderT (DuplexState i o) m r}
   deriving (Functor,Applicative,Monad,MonadIO)
 
+-- | Anything that can access the duplexing state, do IO and log. In
+-- other words, any 'DuplexT' transformer.
+type MonadDuplex i o m =
+  (MonadReader (DuplexState i o) m
+  ,MonadIO m
+  ,Inputish i
+  ,Outputish o
+  ,MonadLogger m)
+
 instance ExceptionMonad (DuplexT Ghc i o) where
   gcatch (DuplexT (ReaderT fm)) fh =
     DuplexT (ReaderT (\r ->
@@ -161,7 +172,11 @@ instance ExceptionMonad (DuplexT Ghc i o) where
                                                DuplexT (ReaderT (f . x'))) of
                                    DuplexT (ReaderT rf) -> rf r)))
 
-instance MonadLogger (DuplexT Ghc i o) where
+instance Monad m => MonadReader (DuplexState i o) (DuplexT m i o) where
+  ask = DuplexT ask
+  local f (DuplexT m) = DuplexT (local f m)
+
+instance MonadIO m => MonadLogger (DuplexT m i o) where
   monadLoggerLog loc source level msg =
     liftIO (runStdoutLoggingT (monadLoggerLog loc source level msg))
 

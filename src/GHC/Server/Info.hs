@@ -16,7 +16,7 @@ import           Data.Monoid
 import           Data.Typeable
 
 -- | Get info about the module: summary, types, etc.
-getModInfo :: ModuleName -> DuplexT Ghc i o ModInfo
+getModInfo :: GhcMonad m => ModuleName -> m ModInfo
 getModInfo name =
   do m <- getModSummary name
      p <- parseModule m
@@ -26,8 +26,8 @@ getModInfo name =
      return (ModInfo m allTypes i)
 
 -- | Get ALL source spans in the module.
-processAllTypeCheckedModule :: TypecheckedModule
-                            -> DuplexT Ghc i o [SpanInfo]
+processAllTypeCheckedModule :: GhcMonad m
+                            => TypecheckedModule -> m [SpanInfo]
 processAllTypeCheckedModule tcm =
   do let tcs = tm_typechecked_source tcm
          bs =
@@ -73,9 +73,10 @@ getSrcSpan' (RealSrcSpan spn) =
                  Nothing)
 getSrcSpan' _ = Nothing
 
-getTypeLHsBind :: TypecheckedModule
+getTypeLHsBind :: (GhcMonad m)
+               => TypecheckedModule
                -> LHsBind Id
-               -> DuplexT Ghc i o (Maybe (Maybe Id,SrcSpan,Type))
+               -> m (Maybe (Maybe Id,SrcSpan,Type))
 #if __GLASGOW_HASKELL__ >= 708
 getTypeLHsBind _ (L spn FunBind{fun_id=pid, fun_matches = MG _ _ typ}) =
   return (Just (Just (unLoc pid),spn,typ))
@@ -86,9 +87,10 @@ getTypeLHsBind _ (L spn FunBind{fun_id=pid, fun_matches = MatchGroup _ typ}) =
 getTypeLHsBind _ _ = return Nothing
 
 #if __GLASGOW_HASKELL__ >= 708
-getTypeLHsExpr :: TypecheckedModule
+getTypeLHsExpr :: (GhcMonad m)
+               => TypecheckedModule
                -> LHsExpr Id
-               -> DuplexT Ghc i o (Maybe (Maybe Id,SrcSpan,Type))
+               -> m (Maybe (Maybe Id,SrcSpan,Type))
 getTypeLHsExpr _ e =
   do hs_env <- getSession
      (_,mbe) <- liftIO (deSugarExpr hs_env e)
@@ -101,7 +103,10 @@ getTypeLHsExpr _ e =
                       ,getLoc e
                       ,exprTypeCore expr))
 #else
-getTypeLHsExpr :: TypecheckedModule -> LHsExpr Id -> DuplexT Ghc i o (Maybe (Maybe Id,SrcSpan, Type))
+getTypeLHsExpr :: (GhcMonad m)
+               => TypecheckedModule
+               -> LHsExpr Id
+               -> m (Maybe (Maybe Id,SrcSpan,Type))
 getTypeLHsExpr tcm e = do
     hs_env <- getSession
     (_, mbe) <- liftIO $ deSugarExpr hs_env modu rn_env ty_env e
@@ -117,9 +122,8 @@ getTypeLHsExpr tcm e = do
     ty_env = tcg_type_env $ fst $ tm_internals_ tcm
 #endif
 
-getTypeLPat :: TypecheckedModule
-            -> LPat Id
-            -> DuplexT Ghc i o (Maybe (Maybe Id,SrcSpan,Type))
+getTypeLPat :: (GhcMonad m)
+            => TypecheckedModule -> LPat Id -> m (Maybe (Maybe Id,SrcSpan,Type))
 getTypeLPat _ (L spn pat) =
   return (Just (Nothing,spn,hsPatType pat))
 
