@@ -11,7 +11,7 @@ module GHC.Server.Controllers
   ,kindOf
   ,locationAt
   ,typeAt
-  ,uses
+  ,usesAt
   ,infoOf
   ,set
   ,packageConf
