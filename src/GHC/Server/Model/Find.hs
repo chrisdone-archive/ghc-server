@@ -8,6 +8,7 @@ module GHC.Server.Model.Find where
 
 import           GHC.Compat
 import           GHC.Server.Types
+import           System.Directory
 
 import           Control.Monad.Logger
 import           Data.ByteString (ByteString)
@@ -206,8 +207,9 @@ resolveType spans' sl sc el ec =
 -- | Guess a module name from a file path.
 guessModule :: GhcMonad m
             => Map ModuleName ModInfo -> FilePath -> m (Maybe ModuleName)
-guessModule infos fp =
-  do target <- guessTarget fp Nothing
+guessModule infos path =
+  do fp <- liftIO (makeRelativeToCurrentDirectory path)
+     target <- guessTarget fp Nothing
      case targetId target of
        TargetModule mn -> return (Just mn)
        _ ->
