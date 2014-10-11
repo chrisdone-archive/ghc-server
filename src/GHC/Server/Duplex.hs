@@ -31,8 +31,7 @@ send o =
      io (writeChan out o)
 
 -- | Run the GHC action in isolation.
-liftGhc :: (MonadDuplex i o m)
-        => Ghc r -> m r
+liftGhc :: Ghc r -> Duplex i o r
 liftGhc m =
   do ghcChan <- asks duplexRunGhc
      io (do result <- newEmptyMVar
@@ -41,7 +40,7 @@ liftGhc m =
                               io (putMVar result v)))
             takeMVar result)
 
--- | Transform over Ghc.
+-- | Transform over Ghc, running the transformed GHC in isolation.
 withGhc :: (Inputish i,Outputish o)
         => DuplexT Ghc i o r -> Duplex i o r
 withGhc m =
