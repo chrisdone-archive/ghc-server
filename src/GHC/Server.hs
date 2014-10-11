@@ -77,7 +77,7 @@ startGhc :: IO (Chan (Ghc ()))
 startGhc =
   do chan <- newChan
      void (forkIO (runGhc (Just libdir)
-                          (do runLogging initializeSlave
+                          (do runLogging initializeGhc
                               forever (protect (join (io (readChan chan)))))))
      return chan
   where protect m =

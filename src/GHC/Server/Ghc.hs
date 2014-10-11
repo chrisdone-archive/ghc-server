@@ -25,9 +25,9 @@ import           Linker
 import           System.Environment
 
 -- | Initialize the GHC service.
-initializeSlave :: (MonadLogger m,GhcMonad m)
-                => m ()
-initializeSlave =
+initializeGhc :: (MonadLogger m,GhcMonad m)
+                   => m ()
+initializeGhc =
   do (libincs,exts,pkgs) <- liftIO getDependencyInfo
      initialDynFlags <- getSessionDynFlags
      userFlags <- fmap (<> concat [exts,initFlags,deps pkgs,src libincs]) makeUserFlags
