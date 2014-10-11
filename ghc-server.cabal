@@ -21,6 +21,7 @@ library
                      GHC.Server.Types
                      GHC.Server.Eval
                      GHC.Server.Logging
+                     GHC.Server.Info
   other-modules:     GHC.Compat
                      GHC.Server.Cabal
                      GHC.Server.Duplex
@@ -41,6 +42,7 @@ library
                    , mtl
                    , network
                    , stm
+                   , syb
                    , template-haskell
                    , text
                    , unordered-containers
