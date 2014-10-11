@@ -19,7 +19,8 @@ import qualified Data.Text as T
 -- data X = X
 --
 -- Otherwise try evaluating it as an expression.
-tryImportOrDecls :: Text -> DuplexT Ghc i o EvalResult
+tryImportOrDecls :: (GhcMonad m)
+                 => Text -> m EvalResult
 tryImportOrDecls e =
   do dflags <- getSessionDynFlags
      result <- gtry (parseImportDecl (T.unpack e))
