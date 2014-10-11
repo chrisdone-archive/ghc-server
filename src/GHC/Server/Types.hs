@@ -332,17 +332,29 @@ instance ToLisp SomeException where
 -- | Command.
 data Command a where
   LoadTarget    :: Text -> Command (Producer Msg (SuccessFlag,Integer))
+   -- Load a module.
   Eval          :: Text -> Command (Duplex Text Text EvalResult)
+  -- Eval something for the REPL.
   Ping          :: Integer -> Command (Returns Integer)
+  -- Ping/pong. Handy for debugging.
   TypeOf        :: Text -> Command (Returns Text)
+  -- Type of identifier.
   LocationAt    :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns SrcSpan)
+  -- Location of identifier at point.
   TypeAt        :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
+  -- Type of identifier at point.
   Uses          :: FilePath -> Text -> Int -> Int -> Int -> Int -> Command (Returns Text)
+  -- Find uses.
   KindOf        :: Text -> Command (Returns Text)
+  -- Kind of the identifier.
   InfoOf        :: Text -> Command (Returns [Text])
+  -- Info of the identifier.
   Set           :: Text -> Command (Returns ())
+  -- Set the options.
   PackageConf   :: FilePath -> Command (Returns ())
+  -- Set the package conf.
   SetCurrentDir :: FilePath -> Command (Returns ())
+  -- Set the current directory.
 
 deriving instance Show (Command a)
 
